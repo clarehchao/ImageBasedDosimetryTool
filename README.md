@@ -48,13 +48,29 @@ Before running the following commands, be sure to do the following:
 
 
 #### Segment & Convert CT images to Geant4 input files
+
 - Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
 - Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://github.com/clarehchao/VoxelizedHumanDoseMultiSDv1) 
 ```
 ./CT2G4files.py inputfile/________.json
 ```
 
-Process the Monte-Carlo simualtion output files to compute the dose factors for a given patient (S-values and etc.)
+#### Compute the Dose Factors from Monte Calor Simulations
+- Process the Monte-Carlo simualtion output files to compute the dose factors for a given patient (S-values and etc.)
+- Save the S-value from all source-to-target organ pairs into the MySQL database (UCSFDoseDB: DoseInfo table)
+```
+./getSvalue_mysql.py inputfile/________.json
+```
+
+#### Compute the Organ Mass and Volume of a given patient geometry
+- Compute the mass and volume of all source organs defined in .json
+- Save the organ mass, volume and name into the MySQL database (UCSFDoseDB: GeoInfo table)
+```
+./OrganMass_mysql.py inputfile/________.json
+```
+
+#### PET-image Residence Time Evaluation
+
 For each source organ, quantify the time activy curve from the PET images and estimate the residence time
 
 
