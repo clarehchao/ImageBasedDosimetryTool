@@ -37,9 +37,13 @@ If any case, you are not using PRL Higgs server to run this toolkit, one can sti
 - lmfit
 
 
-##### The toolkit performs the following functions:
+### The toolkit performs the following functions:
 
 1. Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
+```
+./CT2G4files.py inputfile/________.json
+```
+
 2. Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://github.com/clarehchao/VoxelizedHumanDoseMultiSDv1) 
 3. Process the Monte-Carlo simualtion output files to compute the dose factors for a given patient (S-values and etc.)
 4. For each source organ, quantify the time activy curve from the PET images and estimate the residence time
