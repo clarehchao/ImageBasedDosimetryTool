@@ -22,6 +22,15 @@ A Python Software toolkit to evaluate image-based dosimetry for targeted radionu
 # added by Anaconda 2.3.0 installer
 export PATH="/data1/anaconda/bin:$PATH"
 ```
+- the toolkit was built in the Python 2.7 environment, so be sure to invoke the py27 environment before running the code:
+```
+# Start the python 2.7 environment
+source activate py27
+
+# Exit the python 2.7 environment
+source deactivate
+``` 
+
 
 
 ##### The toolkit performs the following functions:
