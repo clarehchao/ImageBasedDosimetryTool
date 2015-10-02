@@ -47,7 +47,7 @@ Before running the following commands, be sure to do the following:
 2. Create a .json for the patient case
 
 
-###### Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
+#### Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
 ```
 ./CT2G4files.py inputfile/________.json
 ```
