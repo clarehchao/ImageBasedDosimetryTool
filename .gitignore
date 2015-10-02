@@ -1,0 +1,8 @@
+# duplicate cate files
+*~
+*.sql
+*.pyc
+
+# ide directory
+.idea/
+.DS_Store
