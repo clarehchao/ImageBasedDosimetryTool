@@ -70,8 +70,14 @@ Before running the following commands, be sure to do the following:
 ```
 
 #### PET-image Residence Time Evaluation
-
-For each source organ, quantify the time activy curve from the PET images and estimate the residence time
+- For each source organ, quantify the time activy curve from the PET images and estimate the residence time
+- Save the residence time data (bi-exponential fit parameters and residence time) into the MySQL database (UCSFDoseDB: ResidenceTimeInfo table)
+- Save the patient data info (pt_id, therapy dose, etc.) in the MySQL database (UCSFDoseDB: MIBGPTInfo table)
+- Save the total absorbed dose to each organ/tissue in the MySQL database (UCSFDoseDB: AbsorbedDoseInfo table)
+- Plot the final absorbed dose, residence time, and organ mass for each target organ and save in the directory [PTdir]/Summary/
+```
+./ResTime_mysql.py inputfile/________.json
+```
 
 
 
