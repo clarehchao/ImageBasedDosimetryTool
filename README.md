@@ -15,6 +15,7 @@ A Python Software toolkit to evaluate image-based dosimetry for targeted radionu
 
 
 ### Software System Setup
+--------------------
 
 - Python 2.7.10, Anaconda 2.3.0 (64-bit) for Mac OS or Ubuntu Linux
 - on UCSF PRL Higgs server, in your personal account, make sure to add the following line in the ~/.bashrc file
@@ -38,6 +39,7 @@ If any case, you are not using PRL Higgs server to run this toolkit, one can sti
 
 
 ### Toolkit Functions
+--------------------
 
 Before running the following commands, be sure to do the following:
 
@@ -50,7 +52,7 @@ Before running the following commands, be sure to do the following:
 2. Create a .json for the patient case
 
 
-#### Segment & Convert CT images to Geant4 input files
+##### Segment & Convert CT images to Geant4 input files
 
 - Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
 - Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://github.com/clarehchao/VoxelizedHumanDoseMultiSDv1) 
@@ -58,14 +60,14 @@ Before running the following commands, be sure to do the following:
 ./CT2G4files.py inputfile/________.json
 ```
 
-#### Compute the Dose Factors from Monte Calor Simulations
+##### Compute the Dose Factors from Monte Calor Simulations
 - Process the Monte-Carlo simualtion output files to compute the dose factors for a given patient (S-values and etc.)
 - Save the S-value from all source-to-target organ pairs into the MySQL database (UCSFDoseDB: DoseInfo table)
 ```
 ./getSvalue_mysql.py inputfile/________.json
 ```
 
-#### Compute the Organ Mass and Volume of a given patient geometry
+##### Compute the Organ Mass and Volume of a given patient geometry
 - Compute the mass and volume of all source organs defined in .json
 - Save the organ mass, volume and name into the MySQL database (UCSFDoseDB: GeoInfo table)
 ```
