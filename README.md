@@ -38,7 +38,7 @@ If any case, you are not using PRL Higgs server to run this toolkit, one can sti
 - lmfit
 
 
-### Toolkit Functions
+Toolkit Functions
 --------------------
 
 Before running the following commands, be sure to do the following:
