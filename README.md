@@ -14,7 +14,7 @@ A Python Software toolkit to evaluate image-based dosimetry for targeted radionu
 [Fundamentals of Nuclear Medicine Dosimetry by Michael G. Stabin] (http://www.springer.com/us/book/9780387745787)
 
 
-### Software System Setup
+Software System Setup
 --------------------
 
 - Python 2.7.10, Anaconda 2.3.0 (64-bit) for Mac OS or Ubuntu Linux
