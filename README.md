@@ -37,7 +37,15 @@ If any case, you are not using PRL Higgs server to run this toolkit, one can sti
 - lmfit
 
 
-### The toolkit performs the following functions:
+### Toolkit Functions
+
+Before running the following commands, be sure to do the following:
+1. Set up the patient data directory
+  - PT0001/Vol
+  - PT0001/GeoIMdata
+2. Create a .json for the patient case
+
+
 
 1. Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
 ```
