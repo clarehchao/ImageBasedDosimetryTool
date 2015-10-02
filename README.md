@@ -41,9 +41,12 @@ If any case, you are not using PRL Higgs server to run this toolkit, one can sti
 
 Before running the following commands, be sure to do the following:
 
-1. Set up the patient data directory
-  - PT0001/Vol
-  - PT0001/GeoIMdata
+1. Set up the patient data directory [PTdir], e.g. pt_id = 1
+  - PT0001/GeoIMdata/[geo_id]: the raw pixel files of all the contoured organs and organs (.tsv) or .bin (if a binary files for a specific contour is already created)
+  - PT0001/VOIs_Amide: Amide contour files (.xif) for all imaging acquisitions and the ROI statistics of all the contoured VOIs (.tsv)
+  - PT0001/PMODData (optional): If one were to use PMOD to contour, this directory includes all the PMOD VOI statistics files (.voistat) for eachh organ at all imaging time points (e.g. PT0001/PMODData/Tumor1/_____.voistat)
+  - PT0001/IM: dicom images of all the PET/CT images acquired at several time points
+  - PT0001/Summary: the output dose plot, residence time and mass vs. target organ plot, and PET/CT images of the patient with identified tumors
 2. Create a .json for the patient case
 
 
