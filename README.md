@@ -51,15 +51,39 @@ Before running the following commands, be sure to do the following:
   - PT0001/Summary: the output dose plot, residence time and mass vs. target organ plot, and PET/CT images of the patient with identified tumors
 
 2. Create a .json for the patient case
-```json
-{"G4dir":"/data2/G4data_Clare","VHDMSDdir":"/data1/Proj_I131MIBGTherapy/VHDMSDlite","NBptdir":"/data1/Proj_I131MIBGTherapy/ptData","fwdir":"/data2/G4data_Clare/G4INPUT","ctdir":"/data1/Proj_I131MIBGTherapy/ptData/PT0002/IM/E13450/4","geotag":"segCT_MIBGPT2","PTid":2,"pmodftag":"","img_isotope_halflife_day":4.176,"therapy_isotope_halflife_day":8.0252,"I131MIBGinjDosemCi":357.0,"simpkg":"G4.9.6.p02","isDosePlot":true,"isFitPlot":false,"G4AppName":"VoxelizedHumanDoseMultiSDv3-build","G4SimDataDir":"Higgs:/data2/G4data_Clare/G4.9.6.p02work/VoxelizedHumanDoseMultiSDv3-build/data","frtype":"uint8","frindx":[2,3,4],"ecomptag":"adf","phantomtag":"","masktag":[],"binfwtype":"uint8","nxyz":[512,512,364],"dxyz":[1.36719,1.36719,5.0],"xyz0":[-357.10,-315.70,-30.50],"HUthresh":[-5000,-400,200,1440,5000],"HUthresh_name":["Air(inbody)","ResidualSoftTissue","Cranium","Teeth"],"organvoiname":["Lung","Brain","Heart","Liver","SalivaryGlands","Spleen","Urinarybladder","Stomach","Thyroid","Kidney","Tumor1","Tumor2","Tumor3","Tumor4","Tumor5","Tumor6","Tumor7","Tumor8","Tumor9"],"tumorvoiname":["Tumor1","Tumor2","Tumor3","Tumor4","Tumor5","Tumor6","Tumor7","Tumor8","Tumor9"],"srcparticle":"I131","excludesrcname":[],"therun":[1,10,1],"srcname":{"TotalBody":["ResidualSoftTissue","Cranium","Teeth","Lung","Brain","Heart","Liver","SalivaryGlands","Spleen","Urinarybladder","Stomach","Thyroid","Kidney","Tumor1","Tumor2","Tumor3","Tumor4","Tumor5","Tumor6","Tumor7","Tumor8","Tumor9"],"Heart":["Heart"],"Liver":["Liver"],"SalivaryGlands":["SalivaryGlands"],"Spleen":["Spleen"],"Urinarybladder":["Urinarybladder"],"Stomach":["Stomach"],"Thyroid":["Thyroid"],"Kidney":["Kidney"],"Tumor1":["Tumor1"],"Tumor2":["Tumor2"],"Tumor3":["Tumor3"],"Tumor4":["Tumor4"],"Tumor5":["Tumor5"],"Tumor6":["Tumor6"],"Tumor7":["Tumor7"],"Tumor8":["Tumor8"],"Tumor9":["Tumor9"],"Brain":["Brain"],"Lung":["Lung"]}}
-
-
-
-
-
-
-```
+  - "G4dir": Geant4 data directory, e.g. "/data2/G4data_Clare",
+  - "VHDMSDdir": toolkit code directory, e.g. "/data1/Proj_I131MIBGTherapy/VHDMSDlite"
+  - "NBptdir": patient directory, e.g. "/data1/Proj_I131MIBGTherapy/ptData",
+  - "fwdir": Geant4 input file WRITE directory, e.g. "/data2/G4data_Clare/G4INPUT",
+  - "ctdir": the dicom image directory of the CT images that the organ contour was based on for CT segmentation, e.g. "/data1/Proj_I131MIBGTherapy/ptData/PT0002/IM/E13450/4",
+  - "geotag": Geant4 geoemtry name, e.g. "segCT_MIBGPT2",
+  - "PTid": the patient ID
+  - "pmodftag": the format of PMOD .voistat files
+  - "img_isotope_halflife_day": the half life of the imaging isotope (unit: days)
+  - "therapy_isotope_halflife_day":the half-life of the therapy isotope (unit: days)
+  - "I131MIBGinjDosemCi": the injected dose of the I-131 MIBG therapy (unit: mCi) 
+  - "simpkg": Geant4 version, e.g. "G4.9.6.p02"
+  - "isDosePlot": plot and save the dose-related figures if true, otherwise
+  - "isFitPlot": plot the fitted time activity curves if true, otherwise
+  - "G4AppName": Geant4 application name
+  - "G4SimDataDir": Geant4 simulation data directory and computer name
+  - "frtype": binary image data type for file read, e.g."uint8"
+  - "frindx":[2,3,4]
+  - "ecomptag":"adf"
+  - "phantomtag":""
+  - "masktag":[]
+  - "binfwtype":"uint8"
+  - "nxyz":[512,512,364]
+  - "dxyz":[1.36719,1.36719,5.0]
+  - "xyz0":[-357.10,-315.70,-30.50]
+  - "HUthresh":[-5000,-400,200,1440,5000]
+  - "HUthresh_name":["Air(inbody)","ResidualSoftTissue","Cranium","Teeth"]
+  - "organvoiname":["Lung","Brain","Heart","Liver","SalivaryGlands","Spleen","Urinarybladder","Stomach","Thyroid","Kidney"]
+  - "tumorvoiname":["Tumor1","Tumor2","Tumor3","Tumor4","Tumor5","Tumor6","Tumor7","Tumor8","Tumor9"]
+  - "srcparticle":"I131"
+  - "excludesrcname":[]
+  - "therun":[1,10,1]
+  - "srcname":{"TotalBody":["ResidualSoftTissue","Cranium","Teeth","Lung","Brain","Heart","Liver","SalivaryGlands","Spleen","Urinarybladder","Stomach","Thyroid","Kidney","Tumor1","Tumor2","Tumor3","Tumor4","Tumor5","Tumor6","Tumor7","Tumor8","Tumor9"],"Heart":["Heart"],"Liver":["Liver"],"SalivaryGlands":["SalivaryGlands"],"Spleen":["Spleen"],"Urinarybladder":["Urinarybladder"],"Stomach":["Stomach"],"Thyroid":["Thyroid"],"Kidney":["Kidney"],"Tumor1":["Tumor1"],"Tumor2":["Tumor2"],"Tumor3":["Tumor3"],"Tumor4":["Tumor4"],"Tumor5":["Tumor5"],"Tumor6":["Tumor6"],"Tumor7":["Tumor7"],"Tumor8":["Tumor8"],"Tumor9":["Tumor9"],"Brain":["Brain"],"Lung":["Lung"]}}
 
 
 ##### Segment & Convert CT images to Geant4 input files
