@@ -59,6 +59,7 @@ Before running the following commands, be sure to do the following:
 ```
 ./CT2G4files.py inputfile/________.json
 ```
+Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code will only create the source map defined in 'srcname' in the .json file.
 
 ##### Compute the Dose Factors from Monte Calor Simulations
 - Process the Monte-Carlo simualtion output files to compute the dose factors for a given patient (S-values and etc.)
