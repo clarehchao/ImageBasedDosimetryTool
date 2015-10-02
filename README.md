@@ -16,7 +16,9 @@ A Python Software toolkit to evaluate image-based dosimetry for targeted radionu
 - Time activity curve: a curve that relates the time since the initial tracer injection with % of injected dose
 - Residence time: the duration of radiation in a given organ, i.e. total aread under the time activity curve
 
-##### Reference for nuclear medicine dosimetry: [Fundamentals of Nuclear Medicine Dosimetry by Michael G. Stabin] (http://www.springer.com/us/book/9780387745787)
+##### Reference for nuclear medicine dosimetry:
+
+[Fundamentals of Nuclear Medicine Dosimetry by Michael G. Stabin] (http://www.springer.com/us/book/9780387745787)
 
 
 ### Software System Setup
