@@ -31,6 +31,10 @@ source activate py27
 source deactivate
 ``` 
 
+If any case, you are not using PRL Higgs server to run this toolkit, one can still run this toolkit by [installing Anaconda python] (https://www.continuum.io/downloads) and be sure to install the following packages via binstar or conda install:
+- pydicom
+- mysql-python
+- lmfit
 
 
 ##### The toolkit performs the following functions:
