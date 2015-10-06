@@ -79,7 +79,7 @@ Before running the following commands, be sure to do the following:
   - "binfwtype": file format to the binary mask volume, e.g.: "uint8"
   - "nxyz": the 3D dimension of the CT image volume, e.g. [512,512,364]
   - "dxyz": the 3D voxel size of the CT image volume, unit: mm, e.g.: [1.36719,1.36719,5.0]
-  - "xyz0": the initial 3D position of the CT image volume in Amide, e.g. [-357.10,-315.70,-30.50] (should be the same as long as one use Amide)
+  - "xyz0": the initial 3D position of the CT image volume in Amide, e.g. [-357.10,-315.70,-30.50], should be constant as long as one use Amide
   - "HUthresh": the HU thresholds for the initial segmentation, e.g.: [-5000,-400,200,1440,5000]
   - "HUthresh_name": the name of the materials segmented using "HUthresh", e.g. ["Air(inbody)","ResidualSoftTissue","Cranium","Teeth"]
   - "organvoiname": a list of organ name, e.g.: ["Lung","Brain","Heart"]
