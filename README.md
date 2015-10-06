@@ -59,8 +59,8 @@ Before running the following commands, be sure to do the following:
   - "geotag": Geant4 geoemtry name, e.g. "segCT_MIBGPT2",
   - "PTid": the patient ID
   - "pmodftag": the format of PMOD .voistat files
-  - "img_isotope_halflife_day": the half life of the imaging isotope (unit: days)
-  - "therapy_isotope_halflife_day":the half-life of the therapy isotope (unit: days)
+  - "img\_isotope\_halflife_day": the half life of the imaging isotope (unit: days)
+  - "therapy\_isotope\_halflife_day":the half-life of the therapy isotope (unit: days)
   - "I131MIBGinjDosemCi": the injected dose of the I-131 MIBG therapy (unit: mCi) 
   - "simpkg": Geant4 version, e.g. "G4.9.6.p02"
   - "isDosePlot": plot and save the dose-related figures if true, otherwise
@@ -68,22 +68,26 @@ Before running the following commands, be sure to do the following:
   - "G4AppName": Geant4 application name
   - "G4SimDataDir": Geant4 simulation data directory and computer name
   - "frtype": binary image data type for file read, e.g."uint8"
-  - "frindx":[2,3,4]
-  - "ecomptag":"adf"
-  - "phantomtag":""
-  - "masktag":[]
-  - "binfwtype":"uint8"
-  - "nxyz":[512,512,364]
-  - "dxyz":[1.36719,1.36719,5.0]
-  - "xyz0":[-357.10,-315.70,-30.50]
-  - "HUthresh":[-5000,-400,200,1440,5000]
-  - "HUthresh_name":["Air(inbody)","ResidualSoftTissue","Cranium","Teeth"]
-  - "organvoiname":["Lung","Brain","Heart","Liver","SalivaryGlands","Spleen","Urinarybladder","Stomach","Thyroid","Kidney"]
-  - "tumorvoiname":["Tumor1","Tumor2","Tumor3","Tumor4","Tumor5","Tumor6","Tumor7","Tumor8","Tumor9"]
-  - "srcparticle":"I131"
-  - "excludesrcname":[]
-  - "therun":[1,10,1]
-  - "srcname":{"TotalBody":["ResidualSoftTissue","Cranium","Teeth","Lung","Brain","Heart","Liver","SalivaryGlands","Spleen","Urinarybladder","Stomach","Thyroid","Kidney","Tumor1","Tumor2","Tumor3","Tumor4","Tumor5","Tumor6","Tumor7","Tumor8","Tumor9"],"Heart":["Heart"],"Liver":["Liver"],"SalivaryGlands":["SalivaryGlands"],"Spleen":["Spleen"],"Urinarybladder":["Urinarybladder"],"Stomach":["Stomach"],"Thyroid":["Thyroid"],"Kidney":["Kidney"],"Tumor1":["Tumor1"],"Tumor2":["Tumor2"],"Tumor3":["Tumor3"],"Tumor4":["Tumor4"],"Tumor5":["Tumor5"],"Tumor6":["Tumor6"],"Tumor7":["Tumor7"],"Tumor8":["Tumor8"],"Tumor9":["Tumor9"],"Brain":["Brain"],"Lung":["Lung"]}}
+  - "frindx": the column index to read from the Amide raw pixel files for building an binary marsk, e.g. [2,3,4]
+  - "ecomptag": the phantom age usd for elemental composition defined in the Monte Carlo simulation geometry, 
+    - "00f" or "00m: newborn female/male
+    - "01f" or '01m: 1-year-old female/male
+    - "05f" or "05m": 5-year-old female/male
+    - "10f" or "10m": 10-year-old female/male
+    - "15f" or 15m": 15-year-old female/male
+    - "adf" or "adm": adult female/male
+  - "binfwtype": file format to the binary mask volume, e.g.: "uint8"
+  - "nxyz": the 3D dimension of the CT image volume, e.g. [512,512,364]
+  - "dxyz": the 3D voxel size of the CT image volume, unit: mm, e.g.: [1.36719,1.36719,5.0]
+  - "xyz0": the initial 3D position of the CT image volume in Amide, e.g. [-357.10,-315.70,-30.50] (should be the same as long as one use Amide)
+  - "HUthresh": the HU thresholds for the initial segmentation, e.g.: [-5000,-400,200,1440,5000]
+  - "HUthresh_name": the name of the materials segmented using "HUthresh", e.g. ["Air(inbody)","ResidualSoftTissue","Cranium","Teeth"]
+  - "organvoiname": a list of organ name, e.g.: ["Lung","Brain","Heart"]
+  - "tumorvoiname": a list of tumor name, e.g.: ["Tumor1","Tumor2"]
+  - "srcparticle": the source particle simulated in the Monte Carlo simulations, e.g.: "I131"
+  - "excludesrcname": a list of the source name to exclude, []
+  - "therun": the Monte Carlo the start Run #, the end Run #, and the Run increment for evaluating S-value's, e.g. [1,10,1]
+  - "srcname": a dictionary of the source organs, the dictionary key is the name of the source organ, and the value is the organ labele associated to the source organ, e.g. {"TotalBody":["ResidualSoftTissue","Cranium","Teeth","Lung","Brain","Heart","Tumor1","Tumor2"],"Heart":["Heart"],"Tumor1":["Tumor1"],"Tumor2":["Tumor2"],"Brain":["Brain"],"Lung":["Lung"]}}
 
 
 ##### Segment & Convert CT images to Geant4 input files
