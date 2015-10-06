@@ -93,7 +93,7 @@ Before running the following commands, be sure to do the following:
 ##### Segment & Convert CT images to Geant4 input files
 
 - Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
-- Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://github.com/clarehchao/VoxelizedHumanDoseMultiSDv1) 
+- Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://github.com/clarehchao/VoxelizedMonteCarloDosimetry) 
 ```
 ./CT2G4files.py inputfile/________.json
 ```
