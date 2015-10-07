@@ -113,7 +113,7 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 ./OrganMass_mysql.py inputfile/________.json
 ```
 
-#### PET-image Residence Time Evaluation
+##### PET-image Residence Time Evaluation
 - For each source organ, quantify the time activy curve from the PET images and estimate the residence time
 - Save the residence time data (bi-exponential fit parameters and residence time) into the MySQL database (UCSFDoseDB: ResidenceTimeInfo table)
 - Save the patient data info (pt_id, therapy dose, etc.) in the MySQL database (UCSFDoseDB: MIBGPTInfo table)
