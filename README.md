@@ -17,20 +17,12 @@ A Python Software toolkit to evaluate image-based dosimetry for targeted radionu
 Software System Setup
 --------------------
 
-- Python 2.7.10, Anaconda 2.3.0 (64-bit) for Mac OS or Ubuntu Linux
+- Python 2.7.12 Anaconda 4.2.0 (64-bit) for Mac OS or Ubuntu Linux
 - on UCSF PRL Higgs server, in your personal account, make sure to add the following line in the ~/.bashrc file
 ```
-# added by Anaconda 2.3.0 installer
-export PATH="/data1/anaconda/bin:$PATH"
+# added by Anaconda2 4.2.0 installer
+export PATH="/data1/packages/anaconda2/bin:$PATH"
 ```
-- the toolkit was built in the Python 2.7 environment, so be sure to invoke the py27 environment before running the code:
-```
-# Start the python 2.7 environment
-source activate py27
-
-# Exit the python 2.7 environment
-source deactivate
-``` 
 
 If any case, you are not using PRL Higgs server to run this toolkit, one can still run this toolkit by [installing Anaconda python] (https://www.continuum.io/downloads) and be sure to install the following packages via binstar or conda install:
 - pydicom
@@ -56,6 +48,7 @@ Before running the following commands, be sure to do the following:
   - "NBptdir": patient directory, e.g. "/data1/Proj_I131MIBGTherapy/ptData",
   - "fwdir": Geant4 input file WRITE directory, e.g. "/data2/G4data_Clare/G4INPUT",
   - "ctdir": the dicom image directory of the CT images that the organ contour was based on for CT segmentation, e.g. "/data1/Proj_I131MIBGTherapy/ptData/PT0002/IM/E13450/4",
+  - "petdirs": the image study directory and series number of the PET images 
   - "geotag": Geant4 geoemtry name, e.g. "segCT_MIBGPT2",
   - "PTid": the patient ID
   - "pmodftag": the format of PMOD .voistat files
@@ -79,7 +72,7 @@ Before running the following commands, be sure to do the following:
   - "binfwtype": file format to the binary mask volume, e.g.: "uint8"
   - "nxyz": the 3D dimension of the CT image volume, e.g. [512,512,364]
   - "dxyz": the 3D voxel size of the CT image volume, unit: mm, e.g.: [1.36719,1.36719,5.0]
-  - "xyz0": the initial 3D position of the CT image volume in Amide, e.g. [-357.10,-315.70,-30.50], should be constant as long as one use Amide
+  - "xyz0": the initial 3D position of the CT image volume in Amide, e.g. [-357.10,-315.70,-30.50], should be the (x,y,z) coordinate of the top left corner 
   - "HUthresh": the HU thresholds for the initial segmentation, e.g.: [-5000,-400,200,1440,5000]
   - "HUthresh_name": the name of the materials segmented using "HUthresh", e.g. ["Air(inbody)","ResidualSoftTissue","Cranium","Teeth"]
   - "organvoiname": a list of organ name, e.g.: ["Lung","Brain","Heart"]
