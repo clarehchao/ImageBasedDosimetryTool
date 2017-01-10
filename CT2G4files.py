@@ -67,7 +67,8 @@ if __name__ == '__main__':
         segvol1,maxsegval = xv.SegmentVol_ThreshMask(ctvol,param_dict['HUthresh'])
 
         # generate a list of organ mask
-        voiall = param_dict['organvoiname'] + param_dict['tumorvoiname']
+        #voiall = param_dict['organvoiname'] + param_dict['tumorvoiname']
+        voiall = param_dict['organvoiname']
         voifname = ['{}/{}.bin'.format(thedir,ss) for ss in voiall]
         segvol2 = xv.SegmentVol_ImMask(segvol1,voifname,param_dict['binfwtype'],segval0=maxsegval+1)
 

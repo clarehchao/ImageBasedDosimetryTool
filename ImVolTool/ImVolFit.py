@@ -1,6 +1,9 @@
 from __future__ import division
 import numpy as np
 from mpl_toolkits.mplot3d import axes3d
+import matplotlib
+# 'Agg' is used to generate & save figures without popping up the windows (better when ssh into Higgs)
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import math
 from scipy.optimize import leastsq,fmin
@@ -269,7 +272,7 @@ def FitBiExpo(xdata,ydata,pixdim,isplot=False):
     return p1,r2,ymax,fwhm,fwtm,xfit,yfit
 
 
-def FitBiExpo_ResTime(xdata,ydata,pixdim,lambda_p,isplot=False):
+def FitBiExpo_ResTime(xdata,ydata,pixdim,lambda_p,isplot=False,fname=None):
     # flatten the input
     xx = xdata.flatten()
     yy = ydata.flatten()
@@ -281,9 +284,14 @@ def FitBiExpo_ResTime(xdata,ydata,pixdim,lambda_p,isplot=False):
     fmod = Model(Func_BiExpo)
 
     initialp = {'a0':[0.0,1.0,0.0],'b0':[0.0,0.0,0.0],'a1':[1.0,-5.0,-10.],'b1':[1.0,1.0,0.0]}
+    #initialp = {'a0':[1.0,0.0],'b0':[0.0,0.0],'a1':[-5.0,-10.],'b1':[1.0,0.0]}
     chisqrThresh = 0.15
     for ii in range(len(initialp['a0'])):
-        result = fmod.fit(np.squeeze(nydata),x=np.squeeze(xdata),a0=initialp['a0'][ii],b0=initialp['b0'][ii],a1=initialp['a1'][ii],b1=initialp['b1'][ii])
+        fmod.set_param_hint('a0',value=initialp['a0'][ii])
+        fmod.set_param_hint('b0',value=initialp['b0'][ii])
+        fmod.set_param_hint('a1',value=initialp['a1'][ii])
+        fmod.set_param_hint('b1',value=initialp['b1'][ii])
+        result = fmod.fit(np.squeeze(nydata),x=np.squeeze(xdata),params=fmod.make_params(),fit_kws={'nan_policy':'omit'})
         param = result.params.valuesdict()
         auc = param['a0']/(param['b0'] + lambda_p) + param['a1']/(param['b1'] + lambda_p)
         if result.chisqr > chisqrThresh or auc < 0.0:
@@ -291,9 +299,14 @@ def FitBiExpo_ResTime(xdata,ydata,pixdim,lambda_p,isplot=False):
         else:
             print 'leastsq: good fit!'
             break
+            
     if result.chisqr > chisqrThresh or auc < 0.0:
         for ii in range(len(initialp['a0'])):
-            result = fmod.fit(np.squeeze(nydata),x=np.squeeze(xdata),a0=initialp['a0'][ii],b0=initialp['b0'][ii],a1=initialp['a1'][ii],b1=initialp['b1'][ii],method='tnc')
+            fmod.set_param_hint('a0',value=initialp['a0'][ii])
+            fmod.set_param_hint('b0',value=initialp['b0'][ii])
+            fmod.set_param_hint('a1',value=initialp['a1'][ii])
+            fmod.set_param_hint('b1',value=initialp['b1'][ii])
+            result = fmod.fit(np.squeeze(nydata),x=np.squeeze(xdata),params=fmod.make_params(),method='tnc',fit_kws={'nan_policy':'omit'})
             if result.chisqr > chisqrThresh or auc < 0.0:
                 print 'fit with tnc: chisqr = {}, auc = {}'.format(result.chisqr,auc)
             else:
@@ -314,7 +327,9 @@ def FitBiExpo_ResTime(xdata,ydata,pixdim,lambda_p,isplot=False):
         ax = fig.add_subplot(111)
         ax.plot(xx,yy,'ro',label='Original data')
         ax.plot(xfit,yfit,label='Fitted data')
-        plt.show()
+        plt.savefig(fname)
+        #plt.show()
+        plt.close('all')
 
     return p1,r2,ymax,xfit,yfit
 
@@ -362,7 +377,7 @@ def GetBiExpoFWM(coeff,pscale):
     x_sol = fmin(Objfunc_BiExpo,x0,args=(coeff,pscale,fmax),xtol=0.00000001)
     return x_sol
 
-def FitInvExpo(xdata,ydata,isplot=False):
+def FitInvExpo(xdata,ydata,isplot=False,fname=None):
     # flatten the input
     xx = xdata.flatten()
     yy = ydata.flatten()
@@ -386,7 +401,8 @@ def FitInvExpo(xdata,ydata,isplot=False):
         ax = fig.add_subplot(111)
         ax.plot(xx,yy,'ro',label='Original data')
         ax.plot(xfit,yfit,label='Fitted data')
-        plt.show()
+        plt.savefig(fname)
+        #plt.show()
     
     return p1,r2,ymax,xfit,yfit
     

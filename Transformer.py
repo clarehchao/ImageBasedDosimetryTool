@@ -194,7 +194,8 @@ class Transformer:
             else:
                 for c in Organname_base[1].tolist():
                     thelcc = c.lower()
-                    if re.search(re.escape(thelcc),thelcname) or re.search(thelcname,thelcc):
+                    #if re.search(re.escape(thelcc),thelcname) or re.search(thelcname,thelcc):
+                    if re.search(re.escape(thelcc),thelcname) or re.search(thelcc,thelcname) or re.search(thelcname,re.escape(thelcc)) or re.search(thelcname,thelcc):
                         theEcomp[i,1:] = Ecomp_base.ix[thelcOrganname_base == thelcc,1:].as_matrix()[0]  #take the first name found in the organname base
                         #print 'i = {},organ: {}, matched organ: {}'.format(i,name[i],c)
                         #print Ecomp_base.ix[Organname_base[1] == c,1:].as_matrix()[0]

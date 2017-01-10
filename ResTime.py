@@ -13,14 +13,14 @@ import datetime
 class ResTime(object):
     def __init__(self,*args,**kwargs):
         # arguments for the class constructor
-        self.PETIMdir = args[0]
-        self.AmideVOIdir = args[1]
+        self.PTdir = args[0]
+        self.PETsubdirs = args[1]
         self.therapy_isotope_halflife = args[2]  # unit: hour
         self.img_isotope_halflife = args[3]     # unit: hour
-
+        
         self.PMODdir = None
         self.theTumordf = None
-
+        
         
         # class private variables
         self.theRTdf = pd.DataFrame()
@@ -40,11 +40,9 @@ class ResTime(object):
 
     def InitialSetUp(self):
         # Read the dicom header of the IM images to determine time since injection
-        allsubdir = os.walk(self.PETIMdir).next()[1]
         self.PETdtSinceInj = []
-        for ii in range(len(allsubdir)):
-            # for CB-PETCT: series 6 is the PET images, series 4 is the CT images
-            petdir = '{}/{}/6'.format(self.PETIMdir,allsubdir[ii])
+        for ii in range(len(self.PETsubdirs)):
+            petdir = '{}/IM/{}'.format(self.PTdir,self.PETsubdirs[ii])
             allfiles = os.walk(petdir).next()[2]
             thedc = dicom.read_file('{}/{}'.format(petdir,allfiles[0]))
             scanDT = datetime.datetime.strptime(thedc[0x0009,0x100d].value,'%Y%m%d%H%M%S.%f')
@@ -58,14 +56,11 @@ class ResTime(object):
                 else:
                     deltaT = scanDT - adminDT
 
-            #print scanDT
-            #print adminDT
-
             # store dtSinceInj in unit of HOUR
             self.PETdtSinceInj.append(deltaT.days*24. + (deltaT.seconds + deltaT.microseconds/1e6)/3600.)
 
         # Set up Amide file names
-        self.theAmideFnames = sorted(glob.glob('{}/*.tsv'.format(self.AmideVOIdir)))
+        self.theAmideFnames = sorted(glob.glob('{}/VOIs_Amide/*.tsv'.format(self.PTdir)))
         self.theDay = sorted([int(re.findall(r'[\/_\w]+_Day([0-9]+)',ss)[0]) for ss in self.theAmideFnames])
         self.PETdtSinceInj = sorted(self.PETdtSinceInj)
 
@@ -82,7 +77,6 @@ class ResTime(object):
             
         """
         data = np.loadtxt(fname)
-        
         with open(fname) as f:
             lines = f.readlines()
             
@@ -92,7 +86,6 @@ class ResTime(object):
             # make sure the organ names are in similar description as the src_organ name in the mysql database
             ROIname = [re.sub(r'T(\d)',r'Tumor\1',ss) for ss in tmpname]
             ROIname = map(lambda x: str.replace(x,'bladder','UrinaryBladder'),ROIname)
-            #print ROIname
             
             for ll in lines:
                 match = re.search(r'Frame',ll)
@@ -133,7 +126,8 @@ class ResTime(object):
                 self.theTumordf  = self.theTumordf.append(thesr,ignore_index=True)
 
         # convert numerica string to numeric float
-        self.theTumordf = self.theTumordf.convert_objects(convert_numeric=True)
+        #self.theTumordf = self.theTumordf.convert_objects(convert_numeric=True)
+        self.theTumordf = self.theTumordf.apply(pd.to_numeric,errors=('ignore'))
         #print self.theTumordf.dtypes
         self.theTumordf['Mean*Size(mm3)'] = self.theTumordf['Total(AVR*VOL)[(kBq/cc)*(ccm)]']*1000.
         #print self.theTumordf
@@ -213,8 +207,6 @@ class ResTime(object):
             self.theRTdf.loc[self.theRTdf['ImageDayNo.'] == dd,'P_normalizedPET'] = self.theRTdf.loc[self.theRTdf['ImageDayNo.'] == dd,'Mean*Size(mm3)'].apply(lambda x: 100.*x/oh.iloc[0])
             #print self.theRTdf[self.theRTdf['ImageDayNo.'] == dd]
 
-
-
         # make sure all normlaized PET signal is NOT negative
         self.theRTdf['P_normalizedPET'] = self.theRTdf['P_normalizedPET'].map(lambda x: x if x > 0.0 else 0.0)
 
@@ -224,6 +216,7 @@ class ResTime(object):
         # set dtype == float32 even though there is a column of string. pandas will figure out what can be float32 and what cannot
         # need to make sure the data type in each column is set correctly or else groupby operation will not work properly since the column dtype is an 'object' instead of a float
         self.theResTimeHrDF = pd.DataFrame(columns = ['OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)'],index=range(len(self.theOrganName)+1),dtype='float32')
+        
         for ii in range(len(self.theOrganName)):
             oname = self.theOrganName[ii]
             print 'organ name: {}'.format(oname)
@@ -237,7 +230,11 @@ class ResTime(object):
             #print xdata,ydata
             
             # fit input: raw pixel dimension (not discrete 1,2,3,...) ==> pixdim = 1.0
-            p1,r2,ymax,xfit,yfit = ivfit.FitBiExpo_ResTime(xdata,ydata,1.0,self.therapy_isotope_lambda_p,isplot=isplot)
+            if isplot:
+                fname = '{}/Summary/ResTimeFit_{}.pdf'.format(self.PTdir,self.theOrganName[ii])
+                p1,r2,ymax,xfit,yfit = ivfit.FitBiExpo_ResTime(xdata,ydata,1.0,self.therapy_isotope_lambda_p,isplot=isplot,fname=fname)
+            else:
+                p1,r2,ymax,xfit,yfit = ivfit.FitBiExpo_ResTime(xdata,ydata,1.0,self.therapy_isotope_lambda_p)
             
             # data fit was done with normalized data (y/max); BE SURE TO MULTIPLE YMAX BACK TO THE ESTIMATED COEFFICENTS!
             rt = 0.01*ymax*(p1[0]/(p1[1]+self.therapy_isotope_lambda_p) + p1[2]/(p1[3]+self.therapy_isotope_lambda_p))
@@ -252,7 +249,12 @@ class ResTime(object):
         xdata = np.insert(xdata,0,0.0)
         ydata = np.insert(ydata,0,0.0)
         #print xdata,ydata
-        p1,r2,ymax,xfit,yfit = ivfit.FitInvExpo(xdata,ydata,isplot=isplot)
+        
+        if isplot:
+            fname = '{}/Summary/ResTimeFit_TotalBody.pdf'.format(self.PTdir)
+            p1,r2,ymax,xfit,yfit = ivfit.FitInvExpo(xdata,ydata,isplot=isplot,fname=fname)
+        else:
+            p1,r2,ymax,xfit,yfit = ivfit.FitInvExpo(xdata,ydata)
         #print p1,ymax,r2
         rt = 0.01*((100.-ymax*p1[0])/self.therapy_isotope_lambda_p +  ymax*p1[0]/(p1[1] + self.therapy_isotope_lambda_p))
         dict_tmp = {'OrganName':'TotalBody','a0':p1[0],'b0':p1[1],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt}
@@ -288,7 +290,7 @@ class ResTime(object):
         # make sure the organ name are all lower case
         df_all['src_organ_lower'] = df_all['src_organ'].str.lower()
         df_join1 = pd.merge(self.theResTimeHrDF,df_all,left_on = 'matched_OrganName_lower',right_on = 'src_organ_lower',how='left')
-        print len(df_join1.src_organ.unique()), len(theTestlst)
+        #print len(df_join1.src_organ.unique()), len(theTestlst)
 
 
         # create another df without 'totalbody' as src_organ
@@ -303,8 +305,8 @@ class ResTime(object):
         # find mass and volume of the remaining body
         # date frame series iget(i) returns the i-th value in the series by location
         solst = df_join1.loc[df_join1['src_organ'] != 'TotalBody','src_organ'].unique()
-        mass_RB = (df_mass.loc[df_mass['OrganName'] == 'TotalBody','Mass_g'] - df_mass[df_mass['OrganName'].isin(solst)]['Mass_g'].sum()).iget(0)
-        vol_RB = (df_mass.loc[df_mass['OrganName'] == 'TotalBody','Volume_cm3'] - df_mass[df_mass['OrganName'].isin(solst)]['Volume_cm3'].sum()).iget(0)
+        mass_RB = (df_mass.loc[df_mass['OrganName'] == 'TotalBody','Mass_g'] - df_mass[df_mass['OrganName'].isin(solst)]['Mass_g'].sum()).iloc[0]
+        vol_RB = (df_mass.loc[df_mass['OrganName'] == 'TotalBody','Volume_cm3'] - df_mass[df_mass['OrganName'].isin(solst)]['Volume_cm3'].sum()).iloc[0]
         #print mass_RB, vol_RB
 
         # join 2 tables
@@ -321,7 +323,7 @@ class ResTime(object):
 
         # new df with labeling info in the columns under index names and append the RB dose dataframe with dose info of the other src organs
         df_RB.reset_index(level=0,inplace=True)
-        ResTime_RB = self.theResTimeHrDF.loc[self.theResTimeHrDF['OrganName']=='TotalBody','Residence Time (Bq-hr/Bq)'].iget(0) - self.theResTimeHrDF.loc[self.theResTimeHrDF['OrganName']!='TotalBody','Residence Time (Bq-hr/Bq)'].sum()
+        ResTime_RB = self.theResTimeHrDF.loc[self.theResTimeHrDF['OrganName']=='TotalBody','Residence Time (Bq-hr/Bq)'].iloc[0] - self.theResTimeHrDF.loc[self.theResTimeHrDF['OrganName']!='TotalBody','Residence Time (Bq-hr/Bq)'].sum()
         df_RB['Residence Time (Bq-hr/Bq)'] = ResTime_RB
         df_RB['src_organ'] = 'RemainderBody'
         df_dose = df_dose.append(df_RB,ignore_index=True)
