@@ -82,7 +82,8 @@ class Transformer:
         binfwdir = '{}/GeometryIM/binIM/{}'.format(self.theFwdir,self.geotag)
         self.theVolfile = '{}/GeoVol.bin'.format(binfwdir)
         
-        if kwargs.get('flatvol') != None:  # case: no G4 Geometry or SourceMap files exist yet
+        #if kwargs.get('flatvol') != None:  # case: no G4 Geometry or SourceMap files exist yet
+        if isinstance(kwargs.get('flatvol'), np.ndarray):
             self.flatvol = kwargs.get('flatvol')
 
             # create a directory for file writing for G4IM and binIM files

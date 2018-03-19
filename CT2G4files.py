@@ -61,31 +61,35 @@ if __name__ == '__main__':
             xv.SaveFlattenVol(vol,binfname,param_dict['binfwtype'])
 
         # get the CT dicom volume
-        ctdxyz,ctnxyz,ctvol = xv.Dicom2Vol(param_dict['ctdir'])
+        ctdxyz,ctnxyz,ctvol = xv.Dicom2Vol_v2(param_dict['ctdir'])
+        xv.SaveFlattenVol(ctvol, '{}/ctvol.bin'.format(thedir), 'float32')
 
         # segment via threshold
         segvol1,maxsegval = xv.SegmentVol_ThreshMask(ctvol,param_dict['HUthresh'])
+        xv.SaveFlattenVol(segvol1, '{}/segvol1.bin'.format(thedir), 'uint8')
 
         # generate a list of organ mask
-        #voiall = param_dict['organvoiname'] + param_dict['tumorvoiname']
         voiall = param_dict['organvoiname']
         voifname = ['{}/{}.bin'.format(thedir,ss) for ss in voiall]
         segvol2 = xv.SegmentVol_ImMask(segvol1,voifname,param_dict['binfwtype'],segval0=maxsegval+1)
+        xv.SaveFlattenVol(segvol2, '{}/segvol2.bin'.format(thedir), 'uint8')
 
         # prepare the Organtag vs Name files
         thetag = sorted(np.unique(segvol2))  # check this statement!
         thename = param_dict['HUthresh_name'] + voiall
+        print(thetag, thename)
         fname = '{}/OrgantagvsName.txt'.format(thedir)
         f = open(fname,'w')
         for i in range(len(thetag)):  # sort the dictionary by key x[1], sorty by value x[0]
             f.write('%s %s\n' % (thetag[i],thename[i]))
         f.close()
-
+        
         # convert the segmented volume to G4-friendly files
         tf = tf.Transformer(param_dict['binfwtype'],param_dict['VHDMSDdir'],ptdir,param_dict['fwdir'],param_dict['geotag'],param_dict['ecomptag'],flatvol=segvol2,nxyz=param_dict['nxyz'],dxyz=param_dict['dxyz'])
 
         # write the binary geo file
         tf.WriteGeoBin()
+
 
         # For the instance of transformer, set the main volume to segvol2
         tf.SetTheVol()
@@ -103,8 +107,7 @@ if __name__ == '__main__':
 
         # write sourcemap based on the geometry volume
         tf.makeSourceMapFile(param_dict['srcname'])
-
-    """
+"""
     # Compute the organ mass & volume
     print 'Compute the organ mass and volume..'
     tf.ComputeOrganMass()
@@ -115,7 +118,7 @@ if __name__ == '__main__':
     #ddb.CreateTableDB2(con)
     varags = param_dict['geotag']
     ddb.Insert2DB2(con,tf.theOrganMassDF,varags)
-    """
+"""
 
 
 

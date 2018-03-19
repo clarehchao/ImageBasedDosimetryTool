@@ -7,7 +7,16 @@ import MySQLdb as mdb
 import glob
 import os
 import dicom
-import datetime
+from datetime import datetime
+from dicom.tag import Tag
+
+def check_date_format(ss):
+    for fmt in ('%Y%m%d%H%M%S.%f', '%Y%m%d%H%M%S'):
+        try:
+            return datetime.strptime(ss, fmt)
+        except ValueError:
+            pass
+    raise ValueError('no validate date formate found!')
 
 
 class ResTime(object):
@@ -43,10 +52,29 @@ class ResTime(object):
         self.PETdtSinceInj = []
         for ii in range(len(self.PETsubdirs)):
             petdir = '{}/IM/{}'.format(self.PTdir,self.PETsubdirs[ii])
+            print('petdir = {}'.format(petdir))
             allfiles = os.walk(petdir).next()[2]
             thedc = dicom.read_file('{}/{}'.format(petdir,allfiles[0]))
-            scanDT = datetime.datetime.strptime(thedc[0x0009,0x100d].value,'%Y%m%d%H%M%S.%f')
-            adminDT = datetime.datetime.strptime(thedc[0x0009,0x103b].value,'%Y%m%d%H%M%S.%f')
+            
+            if thedc.has_key(Tag(0x0009,0x100d)):  # Discovery STE format
+                scanDT = check_date_format(thedc[0x0009,0x100d].value)
+            elif thedc.has_key(Tag(0x0008, 0x002a)):  #Philip PET scanner format
+                scanDT = check_date_format(thedc[0x0008, 0x002a].value)
+            else:
+                print("ERROR: scan date dicom tag is INCORRECT!")
+           
+            tag_Radiopharmaceutical_Information_Sequence = Tag(0x0054, 0x0016)
+            tag_Radiopharmaceutical_start_datetime = Tag(0x0018, 0x1078)
+            rad_pharm_seq = thedc[tag_Radiopharmaceutical_Information_Sequence]
+            if rad_pharm_seq[0].has_key(tag_Radiopharmaceutical_start_datetime):
+                admindate = rad_pharm_seq[0][tag_Radiopharmaceutical_start_datetime].value
+                adminDT = check_date_format(admindate)
+            else:
+                print("ERROR: PET pharm Admin date dicom tag is INCORRECT!")
+            
+            
+            #scanDT = datetime.datetime.strptime(thedc[0x0009,0x100d].value,'%Y%m%d%H%M%S.%f')
+            #adminDT = datetime.datetime.strptime(thedc[0x0009,0x103b].value,'%Y%m%d%H%M%S.%f')
             if ii == 0:
                 adminDT0 = adminDT
                 deltaT = scanDT - adminDT

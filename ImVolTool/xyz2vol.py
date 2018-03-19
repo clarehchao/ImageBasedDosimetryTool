@@ -171,7 +171,7 @@ def SegmentVol_ImMask(vol,maskfname,ftype,segval0=0):
         segvol = vol
     for i in range(len(maskfname)):
         ma = np.fromfile(maskfname[i],dtype=ftype)
-        if re.search('Tumor',maskfname[i]) or re.search('lesion',maskfname[i]) or re.search('Kidney',maskfname[i]):  # tumor or lesion
+        if re.search('Tumor',maskfname[i]) or re.search('lesion',maskfname[i]) or re.search('Kidney',maskfname[i]) or re.search('Heart',maskfname[i]):  # tumor or lesion
             segvol[ma >= 1] = segval0+i
             print 'It\'s a tumor! can overwrite bone voxel!'
         elif re.search('Brain',maskfname[i]): # do not want the image mask to overwrite any 'bone' or 'air' voxel
@@ -233,6 +233,29 @@ def Dicom2Vol(dcdir):    #instance member function
         im = np.flipud(dc.pixel_array)*dc.RescaleSlope + dc.RescaleIntercept
         #print np.amin(im),np.amax(im)
         vol[i,:,:] = im
+    return dxyz,nxyz,vol
+
+def Dicom2Vol_v2(dcdir):    #instance member function
+    alldcfiles = sorted(glob.glob('%s/*.dcm' % dcdir))
+    
+    if alldcfiles:
+        for i in range(len(alldcfiles)):
+            dcfile = alldcfiles[i]
+            dc = dicom.read_file(dcfile)
+            if i == 0:  # initialize
+                dxyz = np.array([dc.PixelSpacing[0],dc.PixelSpacing[1],dc.SliceThickness])
+                nx = dc.Columns
+                ny = dc.Rows
+                nz = len(alldcfiles)
+                nxyz = np.array([nx,ny,nz])
+                vol = np.empty((nz,ny,nx)) 
+                #print dc
+            im = np.flipud(dc.pixel_array)*dc.RescaleSlope + dc.RescaleIntercept
+            #print np.amin(im),np.amax(im)
+            vol[i,:,:] = im
+    else:
+        print('dicom files are not found!')
+            
     return dxyz,nxyz,vol
 
 def MakeDir(fdir):

@@ -3,11 +3,13 @@
 import pandas as ps
 import ResTime as rt
 from ImVolTool import FileIO as fi
+from ImVolTool import xyz2vol as xv
 import sys
 from DBTool import DoseDB as ddb
 import MySQLdb as mdb
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 
 
 if __name__ == '__main__':
@@ -32,6 +34,11 @@ if __name__ == '__main__':
         print 'PMOD files exist! set up the pmod file directory!'
         pmoddir = '{}/PMODData'.format(ptdir)
         theRT.PMODFile2DF(pmoddir,param_dict['pmodftag'])
+        
+    # make xxxx/Summary directoy for saving plots
+    if param_dict['isFitPlot']:
+        fdir = '{}/Summary'.format(ptdir)
+        xv.MakeDir(fdir)
 
     # Combine all the PET time point data for all source organs
     theRT.GetAllRTDF()
