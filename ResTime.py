@@ -18,6 +18,35 @@ def check_date_format(ss):
             pass
     raise ValueError('no validate date formate found!')
 
+# make the src_organ name and the ResTimeHrDF organ name matches
+def NameMatchFunc(x,reflst):
+    x_strip = ''.join(x.split()).lower()
+    refdict = dict(zip(reflst,[''.join(s.split()).lower() for s in reflst]))
+    for k,val in refdict.items():
+        if re.findall(r'tumor',x_strip):
+            # if x_strip == 'tumor6':
+            #     print('it is tumor6!')
+            #     print(re.findall(r'{}\b'.format(x_strip),val))
+            #     print(re.findall(r'{}\b'.format(val),x_strip))
+            if re.findall(r'{}\b'.format(x_strip),val) or re.findall(r'{}\b'.format(val),x_strip):
+                return k
+                break
+        else:
+            rep = {'(':'\(',')':'\)'}
+            rep = dict((re.escape(k), v) for k, v in rep.iteritems())
+            pattern = re.compile('|'.join(rep.keys()))
+            x_strip_mod = pattern.sub(lambda x: rep[re.escape(x.group(0))], x_strip)
+            val_mod = pattern.sub(lambda x: rep[re.escape(x.group(0))], val)
+            # if x_strip == 'adrenal':
+            #     print('it is adrenal!')
+            #     print(x_strip_mod, val)
+            #     print(re.findall(r'{}'.format(x_strip_mod),val))
+            #     print(val_mod, x_strip)
+            #     print(re.findall(r'{}'.format(val_mod),x_strip))
+            if re.findall(r'{}'.format(x_strip_mod),val) or re.findall(r'{}'.format(val_mod),x_strip):
+                return k
+                break
+
 
 class ResTime(object):
     def __init__(self,*args,**kwargs):
@@ -26,7 +55,8 @@ class ResTime(object):
         self.PETsubdirs = args[1]
         self.therapy_isotope_halflife = args[2]  # unit: hour
         self.img_isotope_halflife = args[3]     # unit: hour
-        
+        self.srcname_dict = args[4]
+
         self.PMODdir = None
         self.theTumordf = None
         
@@ -107,9 +137,8 @@ class ResTime(object):
         data = np.loadtxt(fname)
         with open(fname) as f:
             lines = f.readlines()
-            
-            # find the ROI name
-            tmpname = [re.findall('ROI:\t([\w\s]+)\t',ll)[0] for ll in lines if re.findall('ROI:\t(\w+)',ll)]
+
+            tmpname = [re.findall('ROI:\t([\w\s()]+)\t',ll)[0] for ll in lines if re.findall('ROI:\t([\w()]+)',ll)]
             
             # make sure the organ names are in similar description as the src_organ name in the mysql database
             ROIname = [re.sub(r'T(\d)',r'Tumor\1',ss) for ss in tmpname]
@@ -243,7 +272,7 @@ class ResTime(object):
         
         # set dtype == float32 even though there is a column of string. pandas will figure out what can be float32 and what cannot
         # need to make sure the data type in each column is set correctly or else groupby operation will not work properly since the column dtype is an 'object' instead of a float
-        self.theResTimeHrDF = pd.DataFrame(columns = ['OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)'],index=range(len(self.theOrganName)+1),dtype='float32')
+        self.theResTimeHrDF = pd.DataFrame(columns = ['OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)', 'Two-Time-Point RT Slope', 't0_hr','t1_hr','t2_hr','t3_hr','t4_hr','pInjAct0','pInjAct1','pInjAct2','pInjAct3','pInjAct4'],index=range(len(self.theOrganName)+1),dtype='float32')
         
         for ii in range(len(self.theOrganName)):
             oname = self.theOrganName[ii]
@@ -253,67 +282,88 @@ class ResTime(object):
             #print self.theRTdf.loc[self.theRTdf['OrganName'] == oname,'Mean*Size(mm3)'].as_matrix()
 
             # add data point (0.,0.)
-            xdata = np.insert(xdata,0,0.0)
-            ydata = np.insert(ydata,0,0.0)
-            #print xdata,ydata
-            
+            xdata = np.insert(xdata, 0, 0.0)
+            ydata = np.insert(ydata, 0, 0.0)
+
+            #find the slope of the first 2 time points
+            idx = np.argsort(xdata)
+            idx1 = np.where(idx == 1)[0][0]
+            idx2 = np.where(idx == 2)[0][0]
+            x1, x2 = xdata[idx1], xdata[idx2]
+            y1, y2 = ydata[idx1], ydata[idx2]
+            RT_2TP_slope = (y1 - y2) / (x1 - x2)
+
             # fit input: raw pixel dimension (not discrete 1,2,3,...) ==> pixdim = 1.0
             if isplot:
                 fname = '{}/Summary/ResTimeFit_{}.pdf'.format(self.PTdir,self.theOrganName[ii])
                 p1,r2,ymax,xfit,yfit = ivfit.FitBiExpo_ResTime(xdata,ydata,1.0,self.therapy_isotope_lambda_p,isplot=isplot,fname=fname)
             else:
                 p1,r2,ymax,xfit,yfit = ivfit.FitBiExpo_ResTime(xdata,ydata,1.0,self.therapy_isotope_lambda_p)
-            
+
             # data fit was done with normalized data (y/max); BE SURE TO MULTIPLE YMAX BACK TO THE ESTIMATED COEFFICENTS!
-            rt = 0.01*ymax*(p1[0]/(p1[1]+self.therapy_isotope_lambda_p) + p1[2]/(p1[3]+self.therapy_isotope_lambda_p))
-            dict_tmp = {'OrganName':oname,'a0':p1[0],'b0':p1[1],'a1':p1[2],'b1':p1[3],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt}
+            rt = 0.01*ymax*(p1[0]/(p1[1] + self.therapy_isotope_lambda_p) + p1[2]/(p1[3] + self.therapy_isotope_lambda_p))
+            dict_tmp = {'OrganName':oname,'a0':p1[0],'b0':p1[1],'a1':p1[2],'b1':p1[3],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt, 'Two-Time-Point RT Slope': RT_2TP_slope}
+            xdata_sort = xdata[idx]
+            ydata_sort = ydata[idx]
+
+            time_keys = ['t{}_hr'.format(x) for x in range(len(xdata_sort))] + ['pInjAct{}'.format(x) for x in range(len(ydata_sort))]
+            dict_tac = dict(zip(time_keys, np.append(xdata_sort, ydata_sort).T))
+            dict_tmp.update(dict_tac)
             self.theResTimeHrDF.iloc[ii,:] = pd.Series(dict_tmp)
-        
+
         # calculate the residence time for whole-body (use a a*(1-exp(-b*x) excretion model fit)
         self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'PExcretion_Mean*Size(mm^3)'] = 100.*(self.theRTdf.loc[self.theRTdf['OrganName'] ==self.theTBstr,'DecayCorr_Mean*Size(mm^3)'] - self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'Mean*Size(mm3)'])/self.theRTdf.loc[self.theRTdf['OrganName'] ==self.theTBstr,'DecayCorr_Mean*Size(mm^3)']
         #print self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,['PETdtSinceInjection_hr','Mean*Size(mm3)','DecayCorr_Mean*Size(mm^3)','PExcretion_Mean*Size(mm^3)']]
         xdata = self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'PETdtSinceInjection_hr'].as_matrix()
         ydata = self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'PExcretion_Mean*Size(mm^3)'].as_matrix()
-        xdata = np.insert(xdata,0,0.0)
-        ydata = np.insert(ydata,0,0.0)
+
+        xdata = np.insert(xdata, 0, 0.0)
+        ydata = np.insert(ydata, 0, 0.0)
+
+        # find the slope of the first 2 time points
+        idx = np.argsort(xdata)
+        idx1 = np.where(idx == 1)[0][0]
+        idx2 = np.where(idx == 2)[0][0]
+        x1, x2 = xdata[idx1], xdata[idx2]
+        y1, y2 = ydata[idx1], ydata[idx2]
+        RT_2TP_slope = (y1 - y2) / (x1 - x2)
         #print xdata,ydata
-        
+
         if isplot:
             fname = '{}/Summary/ResTimeFit_TotalBody.pdf'.format(self.PTdir)
             p1,r2,ymax,xfit,yfit = ivfit.FitInvExpo(xdata,ydata,isplot=isplot,fname=fname)
         else:
             p1,r2,ymax,xfit,yfit = ivfit.FitInvExpo(xdata,ydata)
-        #print p1,ymax,r2
         rt = 0.01*((100.-ymax*p1[0])/self.therapy_isotope_lambda_p +  ymax*p1[0]/(p1[1] + self.therapy_isotope_lambda_p))
-        dict_tmp = {'OrganName':'TotalBody','a0':p1[0],'b0':p1[1],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt}
+        dict_tmp = {'OrganName':'TotalBody','a0':p1[0],'b0':p1[1],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt, 'Two-Time-Point RT Slope': RT_2TP_slope}
+        xdata_sort = xdata[idx]
+        ydata_sort = ydata[idx]
+        time_keys = ['t{}_hr'.format(x) for x in range(len(xdata_sort))] + ['pInjAct{}'.format(x) for x in range(len(ydata_sort))]
+        dict_tac = dict(zip(time_keys, np.append(xdata_sort, ydata_sort)))
+        dict_tmp.update(dict_tac)
         self.theResTimeHrDF.iloc[len(self.theOrganName),:] = pd.Series(dict_tmp)
 
+        # Keep the src organ name consistent: use the src name nomenclature defined in the srcname dct key in the .json file
+        theTestlst = self.theResTimeHrDF.OrganName.tolist()
+        theReflst = self.srcname_dict.keys()
+        themapdict = dict(zip(theTestlst, map(lambda p: NameMatchFunc(p, theReflst), theTestlst)))
+        self.theResTimeHrDF['matched_OrganName'] = self.theResTimeHrDF['OrganName'].map(themapdict)
+        self.theResTimeHrDF['matched_OrganName_lower'] = self.theResTimeHrDF['matched_OrganName'].str.lower()
+
+        # # fill nan with other values for ResTimeHrDF
+        # self.theResTimeHrDF.fillna(0.0, inplace=True)
 
     def ComputeOrganDose(self,theGeoIdlst,theSimPkg,InjDoseMBq):
         # Pull a list of S-value from the database
         qr = "SELECT geo_id, b.src_organ, a.target_organ, a.SV_mean from DoseInfo a JOIN SimInfo b ON a.sim_id = b.sim_id WHERE geo_id in ({}) and simpkg = '{}'".format(','.join('"{0}"'.format(w) for w in theGeoIdlst),theSimPkg)
         df_all = pd.read_sql(qr,self.mysqlcon)
 
-        # make the src_organ name and the ResTimeHrDF organ name matches
-        def NameMatchFunc(x,reflst):
-            x_strip = ''.join(x.split()).lower()
-            refdict = dict(zip(reflst,[''.join(s.split()).lower() for s in reflst]))
-            for k,val in refdict.items():
-                if re.findall(r'tumor',x_strip):
-                    if re.findall(r'{}\b'.format(x_strip),val) or re.findall(r'{}\b'.format(val),x_strip):
-                        return k
-                        break
-                else:
-                    if re.findall(r'{}'.format(x_strip),val) or re.findall(r'{}'.format(val),x_strip):
-                        return k
-                        break
-
-        # Keep the src organ name consistent: use the src name nomenclature defined in the srcname dct key in the .json file
-        theTestlst = self.theResTimeHrDF.OrganName.tolist()
-        theReflst = df_all.src_organ.unique().tolist()
-        themapdict = dict(zip(theTestlst,map(lambda p: NameMatchFunc(p,theReflst),theTestlst)))
-        self.theResTimeHrDF['matched_OrganName'] = self.theResTimeHrDF['OrganName'].map(themapdict)
-        self.theResTimeHrDF['matched_OrganName_lower'] = self.theResTimeHrDF['matched_OrganName'].str.lower()
+        # # Keep the src organ name consistent: use the src name nomenclature defined in the srcname dct key in the .json file
+        # theTestlst = self.theResTimeHrDF.OrganName.tolist()
+        # theReflst = df_all.src_organ.unique().tolist()
+        # themapdict = dict(zip(theTestlst,map(lambda p: NameMatchFunc(p,theReflst),theTestlst)))
+        # self.theResTimeHrDF['matched_OrganName'] = self.theResTimeHrDF['OrganName'].map(themapdict)
+        # self.theResTimeHrDF['matched_OrganName_lower'] = self.theResTimeHrDF['matched_OrganName'].str.lower()
 
         # make sure the organ name are all lower case
         df_all['src_organ_lower'] = df_all['src_organ'].str.lower()
@@ -372,6 +422,9 @@ class ResTime(object):
         self.theResTimeMass['Volume_cm3'] = df_join2.groupby('src_organ').agg({'Volume_cm3':np.mean})
         self.theResTimeMass = self.theResTimeMass.append(pd.DataFrame({'Residence Time (Bq-hr/Bq)':ResTime_RB,'Mass_g':mass_RB,'Volume_cm3':vol_RB},index=['RemainderBody']))
         self.theResTimeMass.reset_index(level=0,inplace=True)
+
+    # def ComputeEffectiveDose(self):
+
 
 
 

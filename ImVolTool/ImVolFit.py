@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import math
 from scipy.optimize import leastsq,fmin
 from lmfit import Model
+import seaborn as sns
+sns.set()
 
 
 def ReadFile(fname):

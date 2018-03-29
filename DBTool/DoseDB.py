@@ -54,7 +54,8 @@ def CreateTableDB_ResTimeInfo(con):
         cur.execute("DROP TABLE IF EXISTS ResTimeInfo")
         cur.execute("CREATE TABLE ResTimeInfo(id INT NOT NULL AUTO_INCREMENT,pt_id VARCHAR(100) NOT NULL,OrganName VARCHAR(500) NOT NULL, \
         a0 DOUBLE NULL,b0 DOUBLE NULL,a1 DOUBLE NULL,b1 DOUBLE NULL,ymax DOUBLE NULL,r2 DOUBLE NULL, ResTime_BqhrPerBq DOUBLE NULL, \
-        PRIMARY KEY(id));")
+        TwoTP_RT_slope DOUBLE NULL, t0_hr DOUBLE NULL, t1_hr DOUBLE NULL,t2_hr DOUBLE NULL,t3_hr DOUBLE NULL,t4_hr DOUBLE NULL, \
+        pInjAct0 DOUBLE NULL, pInjAct1 DOUBLE NULL, pInjAct2 DOUBLE NULL, pInjAct3 DOUBLE NULL, pInjAct4 DOUBLE NULL, PRIMARY KEY(id));")
 
 def CreateTableDB_AbsorbedDoseInfo(con):
     with con: # 'with' keyword automatically release the resource (i.e. close the db, catch error)
@@ -87,13 +88,13 @@ def Insert2DB_ResTimeInfo(con,df,vargs):
     ptid = vargs
 
     # make sure there is no NAN in the dataframe
-    df_fill = df.fillna(0)
+    df_fill = df.fillna(0.0)
     with con:
         cur = con.cursor()
         tmpdf = df_fill
         tmpdf['ptid'] = ptid
-        tmplst = list(tmpdf.loc[:,['ptid','matched_OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)']].itertuples(index=False))
-        cur.executemany("INSERT INTO ResTimeInfo(pt_id,OrganName,a0,b0,a1,b1,ymax,r2,ResTime_BqhrPerBq) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s);",tmplst)
+        tmplst = list(tmpdf.loc[:,['ptid','matched_OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)','Two-Time-Point RT Slope'] + ['t{}_hr'.format(x) for x in range(5)] + ['pInjAct{}'.format(x) for x in range(5)]].itertuples(index=False))
+        cur.executemany("INSERT INTO ResTimeInfo(pt_id,OrganName,a0,b0,a1,b1,ymax,r2,ResTime_BqhrPerBq,TwoTP_RT_slope,t0_hr,t1_hr,t2_hr,t3_hr,t4_hr,pInjAct0,pInjAct1,pInjAct2,pInjAct3,pInjAct4) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);",tmplst)
 
 def Insert2DB_AbsorbedDoseInfo(con,df,vargs):
     ptid = vargs
@@ -220,3 +221,5 @@ def CheckTableExist(con,tablename):
         return True
     else:
         return False
+
+
