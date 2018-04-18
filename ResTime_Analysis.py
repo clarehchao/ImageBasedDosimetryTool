@@ -28,6 +28,8 @@ def query_mysql(con,qr):
 def srcname_redef(s):
     if s.lower().find('adrenal') != -1:
         return 'Adrenal'
+    elif s.lower().find('salivary') != -1:
+        return 'SalivaryGlands'
     elif s.lower().find('tumor') != -1:
         return 'Tumor'
     else:
@@ -35,13 +37,14 @@ def srcname_redef(s):
 
 data_dir = '/Users/shuang/Documents/Proj_Neuroblastoma/Data/ResTime_Analysis'
 
-con = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
+# con = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
+con = mdb.connect(host='127.0.0.1', user='root', passwd='TWvachian81', db='UCSFDoseDB')
 qr_rt = "SELECT * FROM ResTimeInfo"
 df = query_mysql(con, qr_rt)
 df['OrganName_mod'] = df['OrganName'].map(srcname_redef)
 
 # save the raw data to csv
-csv_fname = '{}/Organ_Tumor_ResTime_2TPslope.csv'.format(data_dir)
+csv_fname = '{}/Organ_Tumor_ResTime_2TPslope_all.csv'.format(data_dir)
 df.drop(['id','OrganName_mod'], axis=1).to_csv(csv_fname, index=False)
 
 # selet the df where it's not tumor
@@ -79,26 +82,33 @@ plt.savefig(fig_name)
 # look at relationship btw slope vs RT
 df2 = df[df['OrganName_mod'] == 'Tumor']
 
-# get a linear equation
-m, b, r_val, p_val, stderr = stats.linregress(df2['ResTime_BqhrPerBq'], df2['TwoTP_RT_slope'])
-print(m, b, r_val, p_val, stderr)
+TP_slope_idx = [(1,2),(2,3),(1,3)]
+slope_def = ['pIA_{}_{}TP_slope'.format(a,b) for a,b in TP_slope_idx] +\
+            ['SUV_{}_{}TP_slope'.format(a,b) for a,b in TP_slope_idx]
 
-sns.set(font='Arial')
-sns.set_context('paper')
-plt.figure(figsize=(11,8.5))
+print(df2.columns.tolist())
+for sd in slope_def:
+    # get a linear equation
+    print(sd)
+    m, b, r_val, p_val, stderr = stats.linregress(df2['ResTime_BqhrPerBq'], df2[sd])
+    print(m, b, r_val, p_val, stderr)
 
-ax = sns.regplot(x='ResTime_BqhrPerBq', y='TwoTP_RT_slope', data=df2, color='g', line_kws={'label': 'y={0:.3f}x + {1:.3f}, r2={2:.3f}'.format(m,b,r_val**2)}, ci=None)
-ax.legend(fontsize=13)
+    sns.set(font='Arial')
+    sns.set_context('paper')
+    plt.figure(figsize=(11,8.5))
 
-# g3 = sns.lmplot(x='ResTime_BqhrPerBq', y='TwoTP_RT_slope', data=df2, ci=None, palette='muted', size=4, scatter_kws={'s':50, 'alpha':1})
-ax.set_xlabel('Residence time (Bq*hr/Bq)', {'weight': 'bold', 'size': 13})
-ax.set_ylabel('Two-time-point slope', {'weight': 'bold', 'size': 13})
-xtickll = ax.get_xticks().tolist()
-ytickll = ax.get_yticks().tolist()
-ytickll_mod = ['{:.3f}'.format(float(ss))for ss in ytickll]
+    ax = sns.regplot(x='ResTime_BqhrPerBq', y=sd, data=df2, color='g', line_kws={'label': 'y={0:.3f}x + {1:.3f}, r={2:.3f}'.format(m,b,r_val)}, ci=None)
+    ax.legend(fontsize=13)
 
-ax.set_xticklabels(xtickll, {'weight': 'bold', 'size': 11})
-ax.set_yticklabels(ytickll_mod, {'weight': 'bold', 'size': 11})
-fig_name = '{}/ResTimeVSTwoTPslope_Tumors.pdf'.format(data_dir)
-plt.savefig(fig_name, bbox_inches='tight')
-# plt.show()
+    # g3 = sns.lmplot(x='ResTime_BqhrPerBq', y='TwoTP_RT_slope', data=df2, ci=None, palette='muted', size=4, scatter_kws={'s':50, 'alpha':1})
+    ax.set_xlabel('Residence time (Bq*hr/Bq)', {'weight': 'bold', 'size': 13})
+    ax.set_ylabel(sd, {'weight': 'bold', 'size': 13})
+    xtickll = ax.get_xticks().tolist()
+    ytickll = ax.get_yticks().tolist()
+    ytickll_mod = ['{:.3f}'.format(float(ss))for ss in ytickll]
+
+    ax.set_xticklabels(xtickll, {'weight': 'bold', 'size': 11})
+    ax.set_yticklabels(ytickll_mod, {'weight': 'bold', 'size': 11})
+    fig_name = '{}/ResTimeVS{}_Tumors.pdf'.format(data_dir,sd)
+    plt.savefig(fig_name, bbox_inches='tight')
+    # plt.show()

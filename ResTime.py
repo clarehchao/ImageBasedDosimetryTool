@@ -20,6 +20,7 @@ def check_date_format(ss):
 
 # make the src_organ name and the ResTimeHrDF organ name matches
 def NameMatchFunc(x,reflst):
+    print('x is {}'.format(x))
     x_strip = ''.join(x.split()).lower()
     refdict = dict(zip(reflst,[''.join(s.split()).lower() for s in reflst]))
     for k,val in refdict.items():
@@ -46,6 +47,20 @@ def NameMatchFunc(x,reflst):
             if re.findall(r'{}'.format(x_strip_mod),val) or re.findall(r'{}'.format(val_mod),x_strip):
                 return k
                 break
+
+def PETSUV_func(row):
+    # print(row['OrganName'])
+    if not np.isnan(row['Mean']):
+        # print('has mean!')
+        return row['Mean']*row['PETSUV_factor']
+    elif not np.isnan(row['Averaged[kBq/cc]']):
+        # print('has averaged...')
+        return row['Averaged[kBq/cc]']*1000.*row['PETSUV_factor']
+    else:
+        return np.nan
+
+def upperfirst(x):
+    return x[:1].upper() + x[1:]
 
 
 class ResTime(object):
@@ -75,17 +90,21 @@ class ResTime(object):
     
         # mysql connection setup to connect to the local mysql database
         #self.mysqlcon = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
-        self.mysqlcon = mdb.connect('127.0.0.1','testuser','test000','UCSFDoseDB')
+        # self.mysqlcon = mdb.connect('127.0.0.1','testuser','test000','UCSFDoseDB')
+        self.mysqlcon = mdb.connect(host='127.0.0.1', user='root', passwd='TWvachian81', db='UCSFDoseDB')
+
+        self.TP_slope_idx = [(1,2),(2,3),(1,3)]
 
     def InitialSetUp(self):
         # Read the dicom header of the IM images to determine time since injection
-        self.PETdtSinceInj = []
+        self.PETdtSinceInj0 = []
+        self.PETSUV_factor0 = []
         for ii in range(len(self.PETsubdirs)):
             petdir = '{}/IM/{}'.format(self.PTdir,self.PETsubdirs[ii])
-            print('petdir = {}'.format(petdir))
+            # print('petdir = {}'.format(petdir))
             allfiles = os.walk(petdir).next()[2]
             thedc = dicom.read_file('{}/{}'.format(petdir,allfiles[0]))
-            
+
             if thedc.has_key(Tag(0x0009,0x100d)):  # Discovery STE format
                 scanDT = check_date_format(thedc[0x0009,0x100d].value)
             elif thedc.has_key(Tag(0x0008, 0x002a)):  #Philip PET scanner format
@@ -102,7 +121,6 @@ class ResTime(object):
             else:
                 print("ERROR: PET pharm Admin date dicom tag is INCORRECT!")
             
-            
             #scanDT = datetime.datetime.strptime(thedc[0x0009,0x100d].value,'%Y%m%d%H%M%S.%f')
             #adminDT = datetime.datetime.strptime(thedc[0x0009,0x103b].value,'%Y%m%d%H%M%S.%f')
             if ii == 0:
@@ -115,16 +133,54 @@ class ResTime(object):
                     deltaT = scanDT - adminDT
 
             # store dtSinceInj in unit of HOUR
-            self.PETdtSinceInj.append(deltaT.days*24. + (deltaT.seconds + deltaT.microseconds/1e6)/3600.)
+            time_elapse_hr = deltaT.days*24. + (deltaT.seconds + deltaT.microseconds/1e6)/3600. # unit: seconds
+            self.PETdtSinceInj0.append(time_elapse_hr)
+            tag_Units = Tag(0x0054, 0x1001)
+            units_field = thedc[tag_Units]
+            units = units_field.value
+            print('image units:         {}'.format(units))
+
+            # weight
+            tag_Patient_Weight = Tag(0x0010, 0x1030)
+            pat_weight_field = thedc[tag_Patient_Weight]
+            pat_weight = pat_weight_field.value
+            print('patient weight (kg): {}'.format(pat_weight))
+            weight_units_factor = 1000.
+
+            # injected dose
+            tag_Radionuclide_Total_Dose = Tag(0x0018, 0x1074)
+            tag_Radionuclide_Half_life = Tag(0x0018, 0x1075)
+            try:
+                rad_total_dose_field = rad_pharm_seq[0][tag_Radionuclide_Total_Dose]
+            except:
+                print('::O_O:: cannot get the total dose in the image DICOM header')
+                return 0
+            rad_total_dose = rad_total_dose_field.value
+            rad_half_life = rad_pharm_seq[0][tag_Radionuclide_Half_life].value  # unit: seconds
+            print('radionuclide total dose: {}'.format(rad_total_dose))
+
+            # decay corrected the injected dose (or total dose)
+            rad_lambda = mt.log(2) / rad_half_life  # unit: 1/sec
+            decaycorr_rad_total_dose = rad_total_dose * mt.exp(-time_elapse_hr*3600. * rad_lambda)
+
+            print('the decay-corrected total dose (MBq):    {}'.format(decaycorr_rad_total_dose))
+
+            suv_multiplier = float(weight_units_factor * pat_weight) / float(decaycorr_rad_total_dose)
+            self.PETSUV_factor0.append(suv_multiplier)
+            print('suv_multiplier: {}'.format(suv_multiplier))
 
         # Set up Amide file names
         self.theAmideFnames = sorted(glob.glob('{}/VOIs_Amide/*.tsv'.format(self.PTdir)))
         self.theDay = sorted([int(re.findall(r'[\/_\w]+_Day([0-9]+)',ss)[0]) for ss in self.theAmideFnames])
-        self.PETdtSinceInj = sorted(self.PETdtSinceInj)
+        # self.PETdtSinceInj = sorted(self.PETdtSinceInj)
+        # print(self.PETdtSinceInj0, self.PETSUV_factor0)
+        self.PETdtSinceInj, self.PETSUV_factor = zip(*sorted(zip(self.PETdtSinceInj0, self.PETSUV_factor0)))
+
 
         #print self.theAmideFnames
         #print self.theDay
-        #print self.PETdtSinceInj
+        # print(self.PETdtSinceInj)
+        # print(self.PETSUV_factor)
 
     
     @staticmethod
@@ -155,8 +211,11 @@ class ResTime(object):
                     break
         
         df = pd.DataFrame(data,columns=VARname)
-        df['OrganName'] = ROIname
-        df['Mean*Size(mm3)'] = df['Mean']*df['Size(mm^3)']/1000.
+
+        # make sure all the organ are capitalized except for the all-capped string!
+        CapROIname = [ss if ss.isupper() else upperfirst(ss) for ss in ROIname]
+        df['OrganName'] = CapROIname
+        df['Mean*Size(cm3)'] = df['Mean']*df['Size(mm^3)']/1000.
         return df
 
     def PMODFile2DF(self,fdir,ftag):
@@ -178,6 +237,7 @@ class ResTime(object):
                 thesr.index = newindx
                 thesr['ImageDayNo.'] = nday
                 thesr['PETdtSinceInjection_hr'] = self.PETdtSinceInj[self.theDay.index(nday)]
+                thesr['PETSUV_factor'] = self.PETSUV_factor[self.theDay.index(nday)]
                 thesr['RTFname'] = ff
                 thesr['OrganName'] = tn
                 self.theTumordf  = self.theTumordf.append(thesr,ignore_index=True)
@@ -186,24 +246,24 @@ class ResTime(object):
         #self.theTumordf = self.theTumordf.convert_objects(convert_numeric=True)
         self.theTumordf = self.theTumordf.apply(pd.to_numeric,errors=('ignore'))
         #print self.theTumordf.dtypes
-        self.theTumordf['Mean*Size(mm3)'] = self.theTumordf['Total(AVR*VOL)[(kBq/cc)*(ccm)]']*1000.
-        #print self.theTumordf
+        self.theTumordf['Mean*Size(cm3)'] = self.theTumordf['Total(AVR*VOL)[(kBq/cc)*(ccm)]']*1000.
+
 
     def GetAllRTDF(self):
         RTFile2DF = ResTime.RTFile2DF
         
-        combo = zip(self.theAmideFnames,self.PETdtSinceInj,self.theDay)
-        for ss,tt,dd in combo:
+        combo = zip(self.theAmideFnames,self.PETdtSinceInj,self.theDay, self.PETSUV_factor)
+        for ss,tt,dd, ff in combo:
             df_tmp = RTFile2DF(ss)
             df_tmp['RTFname'] = ss
             df_tmp['PETdtSinceInjection_hr'] = tt
+            df_tmp['PETSUV_factor'] = ff
             df_tmp['ImageDayNo.'] = dd
             self.theRTdf = pd.concat([df_tmp,self.theRTdf],axis=0,ignore_index=True)
 
         # Combine RTdf with PMODDF
         if self.theTumordf is not None:
             self.theRTdf = self.theRTdf.append(self.theTumordf,ignore_index=True)
-        #print self.theRTdf
         #print df_tmp.count()
         #print self.theRTdf.count()
 
@@ -215,44 +275,55 @@ class ResTime(object):
 
         # decay correct total body PET counts
         df_totalbody = self.theRTdf[self.theRTdf['OrganName'] == self.theTBstr]
-        #print df_totalbody
-        #print df_totalbody.loc[df_totalbody['ImageDayNo.'] == theminDay,'Mean*Size(mm3)']
+        print df_totalbody.loc[df_totalbody['ImageDayNo.'] == theminDay,'Mean*Size(cm3)']
         dt = df_totalbody['PETdtSinceInjection_hr'].apply(lambda x: x - df_totalbody.loc[df_totalbody['ImageDayNo.'] == theminDay,'PETdtSinceInjection_hr'])
-        dc_total = dt.iloc[:,0].apply(lambda x: df_totalbody.loc[df_totalbody['ImageDayNo.'] == theminDay,'Mean*Size(mm3)']*mt.exp(-x*self.img_isotope_lambda_p))
+        dc_total = dt.iloc[:,0].apply(lambda x: df_totalbody.loc[df_totalbody['ImageDayNo.'] == theminDay,'Mean*Size(cm3)']*mt.exp(-x*self.img_isotope_lambda_p))
+        print(dc_total)
         
         self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'dc_dt'] = dt.iloc[:,0]
-        #print self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr]
-        #print self.theRTdf
-        self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'DecayCorr_Mean*Size(mm^3)'] = dc_total.iloc[:,0]
-        #print self.theRTdf[self.theRTdf['OrganName'] == self.theTBstr]
-        #print self.theRTdf
+        # print self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr]
+        self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'DecayCorr_Mean*Size(cm^3)'] = dc_total.iloc[:,0]
+        # print self.theRTdf[self.theRTdf['OrganName'] == self.theTBstr]
+
         
         # combine VOI stats for SalivaryGlands
         if organnameset.intersection(set(['Salivary glands right','Salivary glands left'])):
-            tmp1 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'Salivary glands right','Mean*Size(mm3)']
+            tmp1 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'Salivary glands right','Mean*Size(cm3)']
             tmp1.index = range(len(tmp1))
-            tmp2 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'salivary glands left','Mean*Size(mm3)']
+            tmp2 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'Salivary glands left','Mean*Size(cm3)']
             tmp2.index = range(len(tmp2))
             tmp3 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'Salivary glands right','PETdtSinceInjection_hr']
             tmp3.index = range(len(tmp3))
             tmp4 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'Salivary glands right','ImageDayNo.']
             tmp4.index = range(len(tmp4))
-            list_series = [tmp1+tmp2,tmp3,tmp4]
+            tmp5 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'Salivary glands right', 'Mean']
+            tmp5.index = range(len(tmp5))
+            tmp6 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'Salivary glands left', 'Mean']
+            tmp6.index = range(len(tmp6))
+            list_series = [tmp1+tmp2,tmp5+tmp6, tmp3,tmp4]
             df_tmp = pd.concat(list_series,axis=1)
             df_tmp['OrganName'] = 'SalivaryGlands'
+            # print(self.theRTdf.loc[self.theRTdf['OrganName'].isin(['Salivary glands right','Salivary glands left'])])
             self.theRTdf = self.theRTdf.append(df_tmp,ignore_index=True)
+            # print(self.theRTdf.loc[self.theRTdf['OrganName'] == 'SalivaryGlands'])
         
         # combine VOI stats for Kidneys
         if organnameset.intersection(set(['RK','LK'])):
-            tmp1 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'RK','Mean*Size(mm3)']
+            tmp1 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'RK','Mean*Size(cm3)']
             tmp1.index = range(len(tmp1))
-            tmp2 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'LK','Mean*Size(mm3)']
+            tmp2 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'LK','Mean*Size(cm3)']
             tmp2.index = range(len(tmp2))
             tmp3 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'RK','PETdtSinceInjection_hr']
             tmp3.index = range(len(tmp3))
             tmp4 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'RK','ImageDayNo.']
             tmp4.index = range(len(tmp4))
-            list_series = [tmp1+tmp2,tmp3,tmp4]
+
+            tmp5 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'RK', 'Mean']
+            tmp5.index = range(len(tmp5))
+            tmp6 = self.theRTdf.loc[self.theRTdf['OrganName'] == 'LK', 'Mean']
+            tmp6.index = range(len(tmp6))
+
+            list_series = [tmp1+tmp2,tmp5+tmp6, tmp3,tmp4]
             df_tmp = pd.concat(list_series,axis=1)
             df_tmp['OrganName'] = 'Kidney'
             self.theRTdf = self.theRTdf.append(df_tmp,ignore_index=True)
@@ -260,38 +331,48 @@ class ResTime(object):
         # normalize all the organ PET signal by the decay-corrected total body count
         for dd in self.theDay:
             #print 'Day {}'.format(dd)
-            oh = self.theRTdf[(self.theRTdf['OrganName'] == self.theTBstr ) & (self.theRTdf['ImageDayNo.'] == dd)]['DecayCorr_Mean*Size(mm^3)']
-            self.theRTdf.loc[self.theRTdf['ImageDayNo.'] == dd,'P_normalizedPET'] = self.theRTdf.loc[self.theRTdf['ImageDayNo.'] == dd,'Mean*Size(mm3)'].apply(lambda x: 100.*x/oh.iloc[0])
+            oh = self.theRTdf[(self.theRTdf['OrganName'] == self.theTBstr ) & (self.theRTdf['ImageDayNo.'] == dd)]['DecayCorr_Mean*Size(cm^3)']
+            self.theRTdf.loc[self.theRTdf['ImageDayNo.'] == dd,'P_normalizedPET'] = self.theRTdf.loc[self.theRTdf['ImageDayNo.'] == dd,'Mean*Size(cm3)'].apply(lambda x: 100.*x/oh.iloc[0])
             #print self.theRTdf[self.theRTdf['ImageDayNo.'] == dd]
 
         # make sure all normlaized PET signal is NOT negative
         self.theRTdf['P_normalizedPET'] = self.theRTdf['P_normalizedPET'].map(lambda x: x if x > 0.0 else 0.0)
 
+        # compute SUV of the mean VOI signal
+        self.theRTdf['PET_SUV'] = self.theRTdf.apply(PETSUV_func, axis=1)
+
         # exclude total body and salivary glands L & R
-        self.theOrganName = [ss for ss in self.theRTdf['OrganName'].unique() if ss not in [self.theTBstr ,'Salivary glands right','salivary glands left','RK','LK']]
+        self.theOrganName = [ss for ss in self.theRTdf['OrganName'].unique() if ss not in [self.theTBstr ,'Salivary glands right','Salivary glands left','RK','LK']]
         
         # set dtype == float32 even though there is a column of string. pandas will figure out what can be float32 and what cannot
         # need to make sure the data type in each column is set correctly or else groupby operation will not work properly since the column dtype is an 'object' instead of a float
-        self.theResTimeHrDF = pd.DataFrame(columns = ['OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)', 'Two-Time-Point RT Slope', 't0_hr','t1_hr','t2_hr','t3_hr','t4_hr','pInjAct0','pInjAct1','pInjAct2','pInjAct3','pInjAct4'],index=range(len(self.theOrganName)+1),dtype='float32')
-        
+        self.theResTimeHrDF = pd.DataFrame(columns = ['OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)','t0_hr','t1_hr','t2_hr','t3_hr','t4_hr','pInjAct0','pInjAct1','pInjAct2','pInjAct3','pInjAct4', 'SUV0','SUV1','SUV2','SUV3','SUV4', 'pIA_1_2TP_slope', 'pIA_2_3TP_slope', 'pIA_1_3TP_slope', 'SUV_1_2TP_slope','SUV_2_3TP_slope','SUV_1_3TP_slope'],index=range(len(self.theOrganName)+1),dtype='float32')
+
         for ii in range(len(self.theOrganName)):
             oname = self.theOrganName[ii]
             print 'organ name: {}'.format(oname)
             xdata = self.theRTdf.loc[self.theRTdf['OrganName'] == oname,'PETdtSinceInjection_hr'].as_matrix()
             ydata = self.theRTdf.loc[self.theRTdf['OrganName'] == oname,'P_normalizedPET'].as_matrix()
-            #print self.theRTdf.loc[self.theRTdf['OrganName'] == oname,'Mean*Size(mm3)'].as_matrix()
+            sdata = self.theRTdf.loc[self.theRTdf['OrganName'] == oname, 'PET_SUV'].as_matrix()
+            #print self.theRTdf.loc[self.theRTdf['OrganName'] == oname,'Mean*Size(cm3)'].as_matrix()
 
             # add data point (0.,0.)
             xdata = np.insert(xdata, 0, 0.0)
             ydata = np.insert(ydata, 0, 0.0)
+            sdata = np.insert(sdata, 0, 0.0)
 
             #find the slope of the first 2 time points
             idx = np.argsort(xdata)
-            idx1 = np.where(idx == 1)[0][0]
-            idx2 = np.where(idx == 2)[0][0]
-            x1, x2 = xdata[idx1], xdata[idx2]
-            y1, y2 = ydata[idx1], ydata[idx2]
-            RT_2TP_slope = (y1 - y2) / (x1 - x2)
+            pIA_2TP_slope = []
+            SUV_2TP_slope = []
+            for ii1,ii2 in self.TP_slope_idx:
+                idx1 = np.where(idx == ii1)[0][0]
+                idx2 = np.where(idx == ii2)[0][0]
+                x1, x2 = xdata[idx1], xdata[idx2]
+                y1, y2 = ydata[idx1], ydata[idx2]
+                s1 ,s2 = sdata[idx1], sdata[idx2]
+                pIA_2TP_slope.append((y2 - y1) / (x2 - x1))
+                SUV_2TP_slope.append((s2 - s1) / (x2 - x1))
 
             # fit input: raw pixel dimension (not discrete 1,2,3,...) ==> pixdim = 1.0
             if isplot:
@@ -302,32 +383,42 @@ class ResTime(object):
 
             # data fit was done with normalized data (y/max); BE SURE TO MULTIPLE YMAX BACK TO THE ESTIMATED COEFFICENTS!
             rt = 0.01*ymax*(p1[0]/(p1[1] + self.therapy_isotope_lambda_p) + p1[2]/(p1[3] + self.therapy_isotope_lambda_p))
-            dict_tmp = {'OrganName':oname,'a0':p1[0],'b0':p1[1],'a1':p1[2],'b1':p1[3],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt, 'Two-Time-Point RT Slope': RT_2TP_slope}
+            dict_tmp = {'OrganName':oname,'a0':p1[0],'b0':p1[1],'a1':p1[2],'b1':p1[3],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt}
             xdata_sort = xdata[idx]
             ydata_sort = ydata[idx]
+            sdata_sort = sdata[idx]
 
-            time_keys = ['t{}_hr'.format(x) for x in range(len(xdata_sort))] + ['pInjAct{}'.format(x) for x in range(len(ydata_sort))]
-            dict_tac = dict(zip(time_keys, np.append(xdata_sort, ydata_sort).T))
+            extra_keys = ['t{}_hr'.format(x) for x in range(len(xdata_sort))] + ['pInjAct{}'.format(x) for x in range(len(ydata_sort))] + \
+                        ['SUV{}'.format(x) for x in range(len(sdata_sort))] + ['pIA_{}_{}TP_slope'.format(a,b) for a,b in self.TP_slope_idx] + \
+                        ['SUV_{}_{}TP_slope'.format(a,b) for a,b in self.TP_slope_idx]
+            extra_val = np.concatenate((xdata_sort, ydata_sort, sdata_sort, np.array(pIA_2TP_slope), np.array(SUV_2TP_slope)), axis=0).T
+            dict_tac = dict(zip(extra_keys, extra_val))
             dict_tmp.update(dict_tac)
             self.theResTimeHrDF.iloc[ii,:] = pd.Series(dict_tmp)
 
-        # calculate the residence time for whole-body (use a a*(1-exp(-b*x) excretion model fit)
-        self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'PExcretion_Mean*Size(mm^3)'] = 100.*(self.theRTdf.loc[self.theRTdf['OrganName'] ==self.theTBstr,'DecayCorr_Mean*Size(mm^3)'] - self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'Mean*Size(mm3)'])/self.theRTdf.loc[self.theRTdf['OrganName'] ==self.theTBstr,'DecayCorr_Mean*Size(mm^3)']
-        #print self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,['PETdtSinceInjection_hr','Mean*Size(mm3)','DecayCorr_Mean*Size(mm^3)','PExcretion_Mean*Size(mm^3)']]
+        # calculate the residence time for whole-body (use a a*(1-exp(-b*x)  model fit)
+        self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'PExcretion_Mean*Size(cm^3)'] = 100.*(self.theRTdf.loc[self.theRTdf['OrganName'] ==self.theTBstr,'DecayCorr_Mean*Size(cm^3)'] - self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'Mean*Size(cm3)'])/self.theRTdf.loc[self.theRTdf['OrganName'] ==self.theTBstr,'DecayCorr_Mean*Size(cm^3)']
+        #print self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,['PETdtSinceInjection_hr','Mean*Size(cm3)','DecayCorr_Mean*Size(mm^3)','PExcretion_Mean*Size(mm^3)']]
         xdata = self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'PETdtSinceInjection_hr'].as_matrix()
-        ydata = self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'PExcretion_Mean*Size(mm^3)'].as_matrix()
+        ydata = self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'PExcretion_Mean*Size(cm^3)'].as_matrix()
+        sdata = self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr, 'PET_SUV'].as_matrix()
 
         xdata = np.insert(xdata, 0, 0.0)
         ydata = np.insert(ydata, 0, 0.0)
+        sdata = np.insert(sdata, 0, 0.0)
 
         # find the slope of the first 2 time points
         idx = np.argsort(xdata)
-        idx1 = np.where(idx == 1)[0][0]
-        idx2 = np.where(idx == 2)[0][0]
-        x1, x2 = xdata[idx1], xdata[idx2]
-        y1, y2 = ydata[idx1], ydata[idx2]
-        RT_2TP_slope = (y1 - y2) / (x1 - x2)
-        #print xdata,ydata
+        pIA_2TP_slope = []
+        SUV_2TP_slope = []
+        for ii1, ii2 in self.TP_slope_idx:
+            idx1 = np.where(idx == ii1)[0][0]
+            idx2 = np.where(idx == ii2)[0][0]
+            x1, x2 = xdata[idx1], xdata[idx2]
+            y1, y2 = ydata[idx1], ydata[idx2]
+            s1, s2 = sdata[idx1], sdata[idx2]
+            pIA_2TP_slope.append((y2 - y1) / (x2 - x1))
+            SUV_2TP_slope.append((s2 - s1) / (x2 - x1))
 
         if isplot:
             fname = '{}/Summary/ResTimeFit_TotalBody.pdf'.format(self.PTdir)
@@ -335,13 +426,23 @@ class ResTime(object):
         else:
             p1,r2,ymax,xfit,yfit = ivfit.FitInvExpo(xdata,ydata)
         rt = 0.01*((100.-ymax*p1[0])/self.therapy_isotope_lambda_p +  ymax*p1[0]/(p1[1] + self.therapy_isotope_lambda_p))
-        dict_tmp = {'OrganName':'TotalBody','a0':p1[0],'b0':p1[1],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt, 'Two-Time-Point RT Slope': RT_2TP_slope}
+
+
+        dict_tmp = {'OrganName':'TotalBody','a0':p1[0],'b0':p1[1],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt}
         xdata_sort = xdata[idx]
         ydata_sort = ydata[idx]
-        time_keys = ['t{}_hr'.format(x) for x in range(len(xdata_sort))] + ['pInjAct{}'.format(x) for x in range(len(ydata_sort))]
-        dict_tac = dict(zip(time_keys, np.append(xdata_sort, ydata_sort)))
+        sdata_sort = sdata[idx]
+
+        extra_keys = ['t{}_hr'.format(x) for x in range(len(xdata_sort))] + ['pInjAct{}'.format(x) for x in range(len(ydata_sort))] + \
+                     ['SUV{}'.format(x) for x in range(len(sdata_sort))] + ['pIA_{}_{}TP_slope'.format(a, b) for a, b in self.TP_slope_idx] + \
+                     ['SUV_{}_{}TP_slope'.format(a, b) for a, b in self.TP_slope_idx]
+        extra_val = np.concatenate((xdata_sort, ydata_sort, sdata_sort, np.array(pIA_2TP_slope), np.array(SUV_2TP_slope)), axis=0).T
+        dict_tac = dict(zip(extra_keys, extra_val))
         dict_tmp.update(dict_tac)
-        self.theResTimeHrDF.iloc[len(self.theOrganName),:] = pd.Series(dict_tmp)
+        self.theResTimeHrDF.iloc[ii+1, :] = pd.Series(dict_tmp)
+
+        # Calculate the residence time of the Remainder body
+        print(self.theRTdf.OrganName.unique().tolist())
 
         # Keep the src organ name consistent: use the src name nomenclature defined in the srcname dct key in the .json file
         theTestlst = self.theResTimeHrDF.OrganName.tolist()

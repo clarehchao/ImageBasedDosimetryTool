@@ -107,18 +107,18 @@ if __name__ == '__main__':
 
         # write sourcemap based on the geometry volume
         tf.makeSourceMapFile(param_dict['srcname'])
-"""
+
     # Compute the organ mass & volume
     print 'Compute the organ mass and volume..'
     tf.ComputeOrganMass()
     print tf.theOrganMassDF
-    
+
     # Insert the mass info into the mysql database
-    con = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
+    con = mdb.connect(host='127.0.0.1', user='root', passwd='TWvachian81', db='UCSFDoseDB')
+    # con = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
     #ddb.CreateTableDB2(con)
     varags = param_dict['geotag']
     ddb.Insert2DB2(con,tf.theOrganMassDF,varags)
-"""
 
 
 

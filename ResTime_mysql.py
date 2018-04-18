@@ -47,6 +47,9 @@ if __name__ == '__main__':
     # Compute the residence for each source organ (get time activity curve and Bi-expo fit)
     theRT.ComputeRT(isplot=param_dict['isFitPlot'])
 
+    fname = '{}/theRTdf_PT{}.csv'.format(theAMIDEVOIdir, param_dict['PTid'])
+    theRT.theRTdf.to_csv(fname)
+
 
     # # compute the final organ dose in mGy considering the MIBG therapy dose and dose contribution from all source organs
     # I131MIBGinjDoseMBq = param_dict['I131MIBGinjDosemCi']*37.
@@ -58,18 +61,20 @@ if __name__ == '__main__':
     # this works on Higgs as if one specifies 'localhost', it tries to connect via default /tmp/mysql.socket
     # see http://stackoverflow.com/questions/4662364/cant-connect-to-localhost-using-pythons-mysqldb
     #con = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
-    con = mdb.connect('127.0.0.1','testuser','test000','UCSFDoseDB')
+    # con = mdb.connect('127.0.0.1','testuser','test000','UCSFDoseDB')
 
-    if not ddb.CheckTableExist(con,'MIBGPTInfo'):
-        print 'table does not exist!'
-        ddb.CreateTableDB_MIBGPTInfo(con)
-    ptinfo_df = ps.DataFrame([{'PTid':param_dict['PTid'],'PETCTdir':thePETdir,'ResTimedir':theAMIDEVOIdir,'geo_id':param_dict['geotag'],'I131MIBGDose_mCi':param_dict['I131MIBGinjDosemCi']}])
-    #ptinfo_df = ptinfo_df.convert_objects(convert_numeric=True)
-    ddb.Insert2DB_MIBGPTInfo(con,ptinfo_df)
-
-    if not ddb.CheckTableExist(con,'ResTimeInfo'):
-        ddb.CreateTableDB_ResTimeInfo(con)
-    ddb.Insert2DB_ResTimeInfo(con,theRT.theResTimeHrDF,param_dict['PTid'])
+    # con = mdb.connect(host='127.0.0.1', user='root',passwd='TWvachian81', db='UCSFDoseDB')
+    #
+    # if not ddb.CheckTableExist(con,'MIBGPTInfo'):
+    #     print 'table does not exist!'
+    #     ddb.CreateTableDB_MIBGPTInfo(con)
+    # ptinfo_df = ps.DataFrame([{'PTid':param_dict['PTid'],'PETCTdir':thePETdir,'ResTimedir':theAMIDEVOIdir,'geo_id':param_dict['geotag'],'I131MIBGDose_mCi':param_dict['I131MIBGinjDosemCi']}])
+    # #ptinfo_df = ptinfo_df.convert_objects(convert_numeric=True)
+    # ddb.Insert2DB_MIBGPTInfo(con,ptinfo_df)
+    #
+    # if not ddb.CheckTableExist(con,'ResTimeInfo'):
+    #     ddb.CreateTableDB_ResTimeInfo(con)
+    # ddb.Insert2DB_ResTimeInfo(con,theRT.theResTimeHrDF,param_dict['PTid'])
 
     # if not ddb.CheckTableExist(con,'AbsorbedDoseInfo'):
     #     ddb.CreateTableDB_AbsorbedDoseInfo(con)

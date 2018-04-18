@@ -54,8 +54,10 @@ def CreateTableDB_ResTimeInfo(con):
         cur.execute("DROP TABLE IF EXISTS ResTimeInfo")
         cur.execute("CREATE TABLE ResTimeInfo(id INT NOT NULL AUTO_INCREMENT,pt_id VARCHAR(100) NOT NULL,OrganName VARCHAR(500) NOT NULL, \
         a0 DOUBLE NULL,b0 DOUBLE NULL,a1 DOUBLE NULL,b1 DOUBLE NULL,ymax DOUBLE NULL,r2 DOUBLE NULL, ResTime_BqhrPerBq DOUBLE NULL, \
-        TwoTP_RT_slope DOUBLE NULL, t0_hr DOUBLE NULL, t1_hr DOUBLE NULL,t2_hr DOUBLE NULL,t3_hr DOUBLE NULL,t4_hr DOUBLE NULL, \
-        pInjAct0 DOUBLE NULL, pInjAct1 DOUBLE NULL, pInjAct2 DOUBLE NULL, pInjAct3 DOUBLE NULL, pInjAct4 DOUBLE NULL, PRIMARY KEY(id));")
+        t0_hr DOUBLE NULL, t1_hr DOUBLE NULL,t2_hr DOUBLE NULL,t3_hr DOUBLE NULL,t4_hr DOUBLE NULL, pInjAct0 DOUBLE NULL, pInjAct1 DOUBLE NULL, \
+        pInjAct2 DOUBLE NULL, pInjAct3 DOUBLE NULL, pInjAct4 DOUBLE NULL, SUV0 DOUBLE NULL, SUV1 DOUBLE NULL, SUV2 DOUBLE NULL, SUV3 DOUBLE NULL, \
+        SUV4 DOUBLE NULL, pIA_1_2TP_slope DOUBLE NULL, pIA_2_3TP_slope DOUBLE NULL, pIA_1_3TP_slope DOUBLE NULL, SUV_1_2TP_slope DOUBLE NULL, \
+        SUV_2_3TP_slope DOUBLE NULL, SUV_1_3TP_slope DOUBLE NULL, PRIMARY KEY(id));")
 
 def CreateTableDB_AbsorbedDoseInfo(con):
     with con: # 'with' keyword automatically release the resource (i.e. close the db, catch error)
@@ -93,8 +95,12 @@ def Insert2DB_ResTimeInfo(con,df,vargs):
         cur = con.cursor()
         tmpdf = df_fill
         tmpdf['ptid'] = ptid
-        tmplst = list(tmpdf.loc[:,['ptid','matched_OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)','Two-Time-Point RT Slope'] + ['t{}_hr'.format(x) for x in range(5)] + ['pInjAct{}'.format(x) for x in range(5)]].itertuples(index=False))
-        cur.executemany("INSERT INTO ResTimeInfo(pt_id,OrganName,a0,b0,a1,b1,ymax,r2,ResTime_BqhrPerBq,TwoTP_RT_slope,t0_hr,t1_hr,t2_hr,t3_hr,t4_hr,pInjAct0,pInjAct1,pInjAct2,pInjAct3,pInjAct4) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);",tmplst)
+        TP_slope_idx_lst = [(1,2),(2,3),(1,3)]
+        colname_lst = ['ptid','matched_OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)'] + ['t{}_hr'.format(x) for x in range(5)] + \
+                      ['pInjAct{}'.format(x) for x in range(5)] + ['SUV{}'.format(x) for x in range(5)] + \
+                      ['pIA_{}_{}TP_slope'.format(a,b) for a,b in TP_slope_idx_lst] + ['SUV_{}_{}TP_slope'.format(a,b) for a,b in TP_slope_idx_lst]
+        tmplst = list(tmpdf.loc[:, colname_lst].itertuples(index=False))
+        cur.executemany("INSERT INTO ResTimeInfo(pt_id,OrganName,a0,b0,a1,b1,ymax,r2,ResTime_BqhrPerBq,t0_hr,t1_hr,t2_hr,t3_hr,t4_hr,pInjAct0,pInjAct1,pInjAct2,pInjAct3,pInjAct4,SUV0,SUV1,SUV2,SUV3,SUV4,pIA_1_2TP_slope,pIA_2_3TP_slope,pIA_1_3TP_slope, SUV_1_2TP_slope, SUV_2_3TP_slope,SUV_1_3TP_slope) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);",tmplst)
 
 def Insert2DB_AbsorbedDoseInfo(con,df,vargs):
     ptid = vargs
