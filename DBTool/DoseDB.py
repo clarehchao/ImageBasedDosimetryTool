@@ -2,12 +2,22 @@ from __future__ import division
 import re
 import pandas as ps
 import numpy as np
+import getpass
+import os
 
 """
 Developer Note:
 09.23.2015: as you notice, create table, insert into tabls are not table specific. will be nice to write a separate class defining how each table is inserted and setup etc
             one can pass in each 'table' specific class to work with DoseDB toolset in a more general way without having to define the same function for different tables
 """
+
+def get_DB_auth_info(db_auth_dir, db_user_name=''):
+    db_pw_path = os.path.join(db_auth_dir, db_user_name + '.auth')
+    f = open(db_pw_path)
+    db_pw = f.readline().strip()
+    f.close()
+    return db_pw
+
 
 def ReadFile2DF(fname,isheader):
     if isheader:
@@ -66,6 +76,14 @@ def CreateTableDB_AbsorbedDoseInfo(con):
         cur.execute("DROP TABLE IF EXISTS AbsorbedDoseInfo")
         cur.execute("CREATE TABLE AbsorbedDoseInfo(id INT NOT NULL AUTO_INCREMENT, pt_id VARCHAR(100) NOT NULL,TargetOrgan VARCHAR(500) NOT NULL,AbsorbedDose_mGy DOUBLE NULL, \
         PRIMARY KEY(id));")
+
+def CreateTableDB_EDInfo(con):
+    with con: # 'with' keyword automatically release the resource (i.e. close the db, catch error)
+        cur = con.cursor()
+        # create table for geometry information e.g. mass, volume
+        cur.execute("DROP TABLE IF EXISTS EDInfo")
+        cur.execute("CREATE TABLE EDInfo(id INT NOT NULL AUTO_INCREMENT, pt_id VARCHAR(100) NOT NULL, geo_id VARCHAR(100) NOT NULL, \
+        EffectiveDose_Sv DOUBLE NULL, PRIMARY KEY(id));")
                      
 def Insert2DB_GeoInfo(con,df,vargs):
     geo_id = vargs
@@ -155,6 +173,13 @@ def Insert2DB_fancydict_DoseSimInfo(con,dct,varags):
             tmp = [start_sim_id,to] + val
             #print tmp
             cur.execute("INSERT INTO DoseInfo(sim_id,target_organ,SV_mean,SV_std) VALUES(%s,%s,%s,%s);",tmp)
+
+
+def Insert2DB_EDInfo(con, vargs):
+    #pt_id, geo_tag, ED = vargs
+    with con:
+        cur = con.cursor()
+        cur.execute("INSERT INTO EDInfo(pt_id,geo_id,EffectiveDose_Sv) VALUES(%s,%s,%s);", vargs)
        
 def ReadDBSize(con):
     with con:

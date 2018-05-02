@@ -17,10 +17,10 @@ A Python Software toolkit to evaluate image-based dosimetry for targeted radionu
 Software System Setup
 --------------------
 
-- Python 2.7.12 Anaconda 4.2.0 (64-bit) for Mac OS or Ubuntu Linux
-- on UCSF PRL Higgs server, in your personal account, make sure to add the following line in the ~/.bashrc file
+- Python 2.7.14.final.0 Anaconda 4.4.10 (64-bit) for Mac OS or Ubuntu Linux
+- on UCSF PRL Terra server, in your personal account, make sure to add the following line in the ~/.bashrc file
 ```
-# added by Anaconda2 4.2.0 installer
+# added by Anaconda2 4.4.10 installer
 export PATH="/data1/packages/anaconda2/bin:$PATH"
 ```
 
@@ -28,6 +28,7 @@ If any case, you are not using PRL Higgs server to run this toolkit, one can sti
 - pydicom
 - mysql-python
 - lmfit
+- pynrrd
 
 
 Toolkit Functions
@@ -35,14 +36,25 @@ Toolkit Functions
 
 Before running the following commands, be sure to do the following:
 
-1. Set up the patient data directory [PTdir], e.g. pt_id = 1
-  - PT0001/GeoIMdata/[geo_id]: the raw pixel files of all the contoured organs and organs (.tsv) or .bin (if a binary files for a specific contour is already created)
+1. Segment all major organs and tumors from the patient PET/CT images
+  - Major organs include: brain, salivary glands, thyroid, kidney, lungs, heart, adrenal glands (if exists), spleen, liver, stomach, urinary bladder
+  - Import PET and CT DICOM images into [3DSlicer] (https://www.slicer.org/) and perform semi-automatic segmentation of each organ by placing seeds appropriately (see example [here] (Seg_demo/3dslicer_demo_pt10.jpg)
+  - Once the segmentation is complete, save and export the segmented volume into a .nrrd file
+  - One would only need to segment organs from one time-point of the PET/CT imaging
+  - In order import 3DSlicer-segmented volume into Amide, one need to convert the .nrrd file to DICOM images via NRRD2DCM.py
+  - Once all the segmented organs are imported into Amide, compute the PET signal statistics using ROI quantification tool via Amide (Tools > Calculate ROI statistics > Execute) and save the output to .tsv (save one .tsv for each imaging time point, see an example [here] (Seg_demo/PET_VOI_Quantification2.png))
+  - Remember to manually place a cylinder VOI in Amide to include the entire body of the patient for PET signal quantification of the total body (see an example [here] (Seg_demo/PET_VOI_Quantification1.png)
+  - To get the raw pixel output of each organ from the CT image, compute the CT signal statistics using ROI quantification tool via Amide and click 'Save Raw Values' once the ROI stats is completed. See an example [here] (Seg_demo/CT_VOI_RawValue.png)
+
+
+2. Set up the patient data directory [PTdir], e.g. pt_id = 1
+  - PT0001/GeoIMdata/[geo_id]: the raw pixel files of all the segmented organs (roi_raw_data{xxOrganName}.tsv) or .bin (if a binary files for a specific contour is already created)
   - PT0001/VOIs_Amide: Amide contour files (.xif) for all imaging acquisitions and the ROI statistics of all the contoured VOIs (.tsv)
   - PT0001/PMODData (optional): If one were to use PMOD to contour, this directory includes all the PMOD VOI statistics files (.voistat) for eachh organ at all imaging time points (e.g. PT0001/PMODData/Tumor1/_____.voistat)
   - PT0001/IM: dicom images of all the PET/CT images acquired at several time points
   - PT0001/Summary: the output dose plot, residence time and mass vs. target organ plot, and PET/CT images of the patient with identified tumors
 
-2. Create a .json for the patient case
+3. Create a .json for the patient case
   - "G4dir": Geant4 data directory, e.g. "/data2/G4data_Clare",
   - "VHDMSDdir": toolkit code directory, e.g. "/data1/Proj_I131MIBGTherapy/VHDMSDlite"
   - "NBptdir": patient directory, e.g. "/data1/Proj_I131MIBGTherapy/ptData",
@@ -72,7 +84,7 @@ Before running the following commands, be sure to do the following:
   - "binfwtype": file format to the binary mask volume, e.g.: "uint8"
   - "nxyz": the 3D dimension of the CT image volume, e.g. [512,512,364]
   - "dxyz": the 3D voxel size of the CT image volume, unit: mm, e.g.: [1.36719,1.36719,5.0]
-  - "xyz0": the initial 3D position of the CT image volume in Amide, e.g. [-357.10,-315.70,-30.50], should be the (x,y,z) coordinate of the top left corner 
+  - "xyz0": the origin of the 3D position of the CT image volume in Amide, unit: mm (can be calculated by xyz_center - dxyz*(nxyz-1)*0.5, where xyz_center is found in the 'Center' Tag when right-click on the CT image series in Amide)
   - "HUthresh": the HU thresholds for the initial segmentation, e.g.: [-5000,-400,200,1440,5000]
   - "HUthresh_name": the name of the materials segmented using "HUthresh", e.g. ["Air(inbody)","ResidualSoftTissue","Cranium","Teeth"]
   - "organvoiname": a list of organ name, e.g.: ["Lung","Brain","Heart"]
@@ -86,7 +98,7 @@ Before running the following commands, be sure to do the following:
 ##### Segment & Convert CT images to Geant4 input files
 
 - Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
-- Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://github.com/clarehchao/VoxelizedMonteCarloDosimetry) 
+- Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://git.radiology.ucsf.edu/PRL/VoxelizedMonteCarloDosimetry)
 ```
 ./CT2G4files.py inputfile/________.json
 ```
@@ -115,6 +127,9 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 ```
 ./ResTime_mysql.py inputfile/________.json
 ```
+
+##### MySQL Database
+
 
 
 

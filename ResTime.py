@@ -19,8 +19,8 @@ def check_date_format(ss):
     raise ValueError('no validate date formate found!')
 
 # make the src_organ name and the ResTimeHrDF organ name matches
-def NameMatchFunc(x,reflst):
-    print('x is {}'.format(x))
+def Func_Match_Name1(x,reflst):
+    # print('x is {}'.format(x))
     x_strip = ''.join(x.split()).lower()
     refdict = dict(zip(reflst,[''.join(s.split()).lower() for s in reflst]))
     for k,val in refdict.items():
@@ -62,6 +62,17 @@ def PETSUV_func(row):
 def upperfirst(x):
     return x[:1].upper() + x[1:]
 
+def Func_Match_Name2(x, reflst): # cross match the name of string x with all the strings in reflst
+    x = x.lower()
+    for s in reflst:
+        tmp = s.replace(' ','')
+        if x.find(tmp) != -1 or tmp.find(x) != -1:
+            # print('x={}'.format(x))
+            # print('tmp={}'.format(tmp))
+            return s
+    # print('no match!')
+    return x
+
 
 class ResTime(object):
     def __init__(self,*args,**kwargs):
@@ -71,9 +82,12 @@ class ResTime(object):
         self.therapy_isotope_halflife = args[2]  # unit: hour
         self.img_isotope_halflife = args[3]     # unit: hour
         self.srcname_dict = args[4]
+        self.Frdatadir = args[5]
 
         self.PMODdir = None
         self.theTumordf = None
+        self.theOrganDosemGy = None
+        self.theResTimeHrDF = None
         
         
         # class private variables
@@ -106,7 +120,7 @@ class ResTime(object):
             thedc = dicom.read_file('{}/{}'.format(petdir,allfiles[0]))
 
             if thedc.has_key(Tag(0x0009,0x100d)):  # Discovery STE format
-                scanDT = check_date_format(thedc[0x0009,0x100d].value)
+                scanDT = check_date_format(thedc[0x0009, 0x100d].value)
             elif thedc.has_key(Tag(0x0008, 0x002a)):  #Philip PET scanner format
                 scanDT = check_date_format(thedc[0x0008, 0x002a].value)
             else:
@@ -134,6 +148,7 @@ class ResTime(object):
 
             # store dtSinceInj in unit of HOUR
             time_elapse_hr = deltaT.days*24. + (deltaT.seconds + deltaT.microseconds/1e6)/3600. # unit: seconds
+            # print(scanDT, adminDT, adminDT0, deltaT, time_elapse_hr)
             self.PETdtSinceInj0.append(time_elapse_hr)
             tag_Units = Tag(0x0054, 0x1001)
             units_field = thedc[tag_Units]
@@ -275,10 +290,10 @@ class ResTime(object):
 
         # decay correct total body PET counts
         df_totalbody = self.theRTdf[self.theRTdf['OrganName'] == self.theTBstr]
-        print df_totalbody.loc[df_totalbody['ImageDayNo.'] == theminDay,'Mean*Size(cm3)']
+        # print df_totalbody.loc[df_totalbody['ImageDayNo.'] == theminDay,'Mean*Size(cm3)']
         dt = df_totalbody['PETdtSinceInjection_hr'].apply(lambda x: x - df_totalbody.loc[df_totalbody['ImageDayNo.'] == theminDay,'PETdtSinceInjection_hr'])
         dc_total = dt.iloc[:,0].apply(lambda x: df_totalbody.loc[df_totalbody['ImageDayNo.'] == theminDay,'Mean*Size(cm3)']*mt.exp(-x*self.img_isotope_lambda_p))
-        print(dc_total)
+        # print(dc_total)
         
         self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr,'dc_dt'] = dt.iloc[:,0]
         # print self.theRTdf.loc[self.theRTdf['OrganName'] == self.theTBstr]
@@ -426,7 +441,20 @@ class ResTime(object):
         else:
             p1,r2,ymax,xfit,yfit = ivfit.FitInvExpo(xdata,ydata)
         rt = 0.01*((100.-ymax*p1[0])/self.therapy_isotope_lambda_p +  ymax*p1[0]/(p1[1] + self.therapy_isotope_lambda_p))
-
+        if rt <  0.:
+            print('::OH NO O_O:: Residence time of total body is NEGATIVE! Let\'s make some assumption and fit the model again!')
+            # for the case where rt for total body was estimated to be neg (NO GOOD), usually due to missing time-point (fewer than 4 imaging time points)
+            # assumption: add another data point at 120 hr, use the same %IA estimated for the last available time-point
+            xdata = np.insert(xdata, len(xdata), 120.)
+            ydata = np.insert(ydata, len(ydata), ydata[idx[-1]])
+            sdata = np.insert(sdata, len(sdata), sdata[idx[-1]])
+            if isplot:
+                fname = '{}/Summary/ResTimeFit_TotalBody.pdf'.format(self.PTdir)
+                p1, r2, ymax, xfit, yfit = ivfit.FitInvExpo(xdata, ydata, isplot=isplot, fname=fname)
+            else:
+                p1, r2, ymax, xfit, yfit = ivfit.FitInvExpo(xdata, ydata)
+            rt = 0.01 * ((100. - ymax * p1[0]) / self.therapy_isotope_lambda_p + ymax * p1[0] / (p1[1] + self.therapy_isotope_lambda_p))
+            idx = np.argsort(xdata) # re-sort the modified data
 
         dict_tmp = {'OrganName':'TotalBody','a0':p1[0],'b0':p1[1],'ymax':ymax,'r2':r2,'Residence Time (Bq-hr/Bq)':rt}
         xdata_sort = xdata[idx]
@@ -441,14 +469,12 @@ class ResTime(object):
         dict_tmp.update(dict_tac)
         self.theResTimeHrDF.iloc[ii+1, :] = pd.Series(dict_tmp)
 
-        # Calculate the residence time of the Remainder body
-        print(self.theRTdf.OrganName.unique().tolist())
-
         # Keep the src organ name consistent: use the src name nomenclature defined in the srcname dct key in the .json file
         theTestlst = self.theResTimeHrDF.OrganName.tolist()
         theReflst = self.srcname_dict.keys()
-        themapdict = dict(zip(theTestlst, map(lambda p: NameMatchFunc(p, theReflst), theTestlst)))
-        self.theResTimeHrDF['matched_OrganName'] = self.theResTimeHrDF['OrganName'].map(themapdict)
+        # themapdict = dict(zip(theTestlst, map(lambda p: Func_Match_Name1(p, theReflst), theTestlst)))
+        # self.theResTimeHrDF['matched_OrganName'] = self.theResTimeHrDF['OrganName'].map(themapdict)
+        self.theResTimeHrDF['matched_OrganName'] = self.theResTimeHrDF['OrganName'].apply(Func_Match_Name1, reflst=theReflst)
         self.theResTimeHrDF['matched_OrganName_lower'] = self.theResTimeHrDF['matched_OrganName'].str.lower()
 
         # # fill nan with other values for ResTimeHrDF
@@ -479,7 +505,6 @@ class ResTime(object):
         # get organ mass for a given geometry
         qr = "SELECT geo_id, OrganName,Mass_g,Volume_cm3 from GeoInfo WHERE geo_id in ({})".format(','.join('"{0}"'.format(w) for w in theGeoIdlst))
         df_mass = pd.read_sql(qr,self.mysqlcon)
-
         
         # find mass and volume of the remaining body
         # date frame series iget(i) returns the i-th value in the series by location
@@ -510,7 +535,6 @@ class ResTime(object):
         # compuate the organ dose: multiply the S-value to residence time and initial injection dose
         # S-value: Svalue (mGy/MBq-s) * ResTime(MBq-hr/MBq) * A0(MBq)
         df_dose['OrganDose(mGy)'] = df_dose['SV_mean']*df_dose['Residence Time (Bq-hr/Bq)']*3600*InjDoseMBq  # unit: mGy/MBq * (MBq) = mGy
-        #print df_dose
 
         # calculate organ dose from all SOURCE ORGANS except 'TotalBody'
         self.theOrganDosemGy = df_dose.groupby('target_organ').agg({'OrganDose(mGy)':np.sum})
@@ -524,8 +548,19 @@ class ResTime(object):
         self.theResTimeMass = self.theResTimeMass.append(pd.DataFrame({'Residence Time (Bq-hr/Bq)':ResTime_RB,'Mass_g':mass_RB,'Volume_cm3':vol_RB},index=['RemainderBody']))
         self.theResTimeMass.reset_index(level=0,inplace=True)
 
-    # def ComputeEffectiveDose(self):
+    def ComputeEffectiveDose(self, wt_type=''):
+        fname = '{}/OrganData/EffectiveDoseWt.csv'.format(self.Frdatadir)
+        self.df_EDWt = pd.read_csv(fname, header=0)
+        EDwt_reflst = self.df_EDWt['Target organ'].tolist()
 
+        # match organ name with the wt factor organ name
+        if self.theOrganDosemGy is not None: # make sure organ dose DF is defined and populated
+            self.theOrganDosemGy['Target_name_match'] = self.theOrganDosemGy['target_organ'].apply(Func_Match_Name2, reflst=EDwt_reflst)
+            tmp_df = self.theOrganDosemGy.merge(self.df_EDWt, how='inner',left_on='Target_name_match', right_on='Target organ')
+            tmp_df['ED*dose'] = tmp_df.apply(lambda row: row['OrganDose(mGy)']*row['ICRP 103 wt'],axis=1)
+            self.theED = tmp_df['ED*dose'].sum()/1000. #unit: Sv
+        else:
+            print('No organ dose was calculated!! O_O')
 
 
 

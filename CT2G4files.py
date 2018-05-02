@@ -77,7 +77,6 @@ if __name__ == '__main__':
         # prepare the Organtag vs Name files
         thetag = sorted(np.unique(segvol2))  # check this statement!
         thename = param_dict['HUthresh_name'] + voiall
-        print(thetag, thename)
         fname = '{}/OrgantagvsName.txt'.format(thedir)
         f = open(fname,'w')
         for i in range(len(thetag)):  # sort the dictionary by key x[1], sorty by value x[0]

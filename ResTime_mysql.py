@@ -25,7 +25,7 @@ if __name__ == '__main__':
     
 
     # create a ResTime Constructor with initial variable setup
-    theRT = rt.ResTime(ptdir,param_dict['petdirs'],param_dict['therapy_isotope_halflife_day']*24.,param_dict['img_isotope_halflife_day']*24., param_dict['srcname'])
+    theRT = rt.ResTime(ptdir,param_dict['petdirs'],param_dict['therapy_isotope_halflife_day']*24.,param_dict['img_isotope_halflife_day']*24., param_dict['srcname'], param_dict['VHDMSDdir'])
     theRT.InitialSetUp()
     #print theRT.PETdtSinceInj
 
@@ -34,7 +34,7 @@ if __name__ == '__main__':
         print 'PMOD files exist! set up the pmod file directory!'
         pmoddir = '{}/PMODData'.format(ptdir)
         theRT.PMODFile2DF(pmoddir,param_dict['pmodftag'])
-        
+
     # make xxxx/Summary directoy for saving plots
     if param_dict['isFitPlot']:
         fdir = '{}/Summary'.format(ptdir)
@@ -46,25 +46,31 @@ if __name__ == '__main__':
 
     # Compute the residence for each source organ (get time activity curve and Bi-expo fit)
     theRT.ComputeRT(isplot=param_dict['isFitPlot'])
+    print(theRT.theResTimeHrDF)
 
-    fname = '{}/theRTdf_PT{}.csv'.format(theAMIDEVOIdir, param_dict['PTid'])
-    theRT.theRTdf.to_csv(fname)
+    # # fname = '{}/theRTdf_PT{}.csv'.format(theAMIDEVOIdir, param_dict['PTid'])
+    # # theRT.theRTdf.to_csv(fname)
 
+    # compute the final organ dose in mGy considering the MIBG therapy dose and dose contribution from all source organs
+    I131MIBGinjDoseMBq = param_dict['I131MIBGinjDosemCi']*37.
+    theRT.ComputeOrganDose([param_dict['geotag']],param_dict['simpkg'],I131MIBGinjDoseMBq)
+    print(theRT.theOrganDosemGy)
+    # fname = '{}/Summary/theOrganDosemGy_PT{}.csv'.format(ptdir, param_dict['PTid'])
+    # theRT.theOrganDosemGy.to_csv(fname)
 
-    # # compute the final organ dose in mGy considering the MIBG therapy dose and dose contribution from all source organs
-    # I131MIBGinjDoseMBq = param_dict['I131MIBGinjDosemCi']*37.
-    # theRT.ComputeOrganDose([param_dict['geotag']],param_dict['simpkg'],I131MIBGinjDoseMBq)
+    theRT.ComputeEffectiveDose()
+    print(theRT.theED)
 
     # Save patient info, ResTime, absorbed dose data into database
-
     # Initialize the MySQL connection
     # this works on Higgs as if one specifies 'localhost', it tries to connect via default /tmp/mysql.socket
     # see http://stackoverflow.com/questions/4662364/cant-connect-to-localhost-using-pythons-mysqldb
     #con = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
     # con = mdb.connect('127.0.0.1','testuser','test000','UCSFDoseDB')
 
-    # con = mdb.connect(host='127.0.0.1', user='root',passwd='TWvachian81', db='UCSFDoseDB')
-    #
+    db_pw = ddb.get_DB_auth_info(param_dict['DB_auth_dir'],param_dict['DB_usr'])
+    con = mdb.connect(host='127.0.0.1', user=param_dict['DB_usr'],passwd=db_pw, db='UCSFDoseDB')
+
     # if not ddb.CheckTableExist(con,'MIBGPTInfo'):
     #     print 'table does not exist!'
     #     ddb.CreateTableDB_MIBGPTInfo(con)
@@ -79,6 +85,10 @@ if __name__ == '__main__':
     # if not ddb.CheckTableExist(con,'AbsorbedDoseInfo'):
     #     ddb.CreateTableDB_AbsorbedDoseInfo(con)
     # ddb.Insert2DB_AbsorbedDoseInfo(con,theRT.theOrganDosemGy,param_dict['PTid'])
+
+    if not ddb.CheckTableExist(con,'EDInfo'):
+        ddb.CreateTableDB_EDInfo(con)
+    ddb.Insert2DB_EDInfo(con,[param_dict['PTid'], param_dict['geotag'], theRT.theED])
 
     # if param_dict['isDosePlot']:
     #     # plot the target organ vs absorbed dose
