@@ -38,7 +38,7 @@ Before running the following commands, be sure to do the following:
 
 1. Segment all major organs and tumors from the patient PET/CT images
   - Major organs include: brain, salivary glands, thyroid, kidney, lungs, heart, adrenal glands (if exists), spleen, liver, stomach, urinary bladder
-  - Import PET and CT DICOM images into [3DSlicer] (https://www.slicer.org/) and perform semi-automatic segmentation of each organ by placing seeds appropriately (see example [here] (Seg_demo/3dslicer_demo_pt10.jpg)
+  - Import PET and CT DICOM images into [3DSlicer] (https://www.slicer.org/) and perform semi-automatic segmentation of each organ by placing seeds appropriately (see example [here]) (Seg_demo/3dslicer_demo_pt10.jpg)
   - Once the segmentation is complete, save and export the segmented volume into a .nrrd file
   - One would only need to segment organs from one time-point of the PET/CT imaging
   - In order import 3DSlicer-segmented volume into Amide, one need to convert the .nrrd file to DICOM images via NRRD2DCM.py
@@ -129,7 +129,7 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 ```
 
 ##### MySQL Database
-
+- give example of how to pull out data needed from the data, like example query and etc.
 
 
 
