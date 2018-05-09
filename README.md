@@ -35,7 +35,7 @@ If any case, you are not using PRL server to run this toolkit, one can still run
 - mysql-python
 - lmfit
 - pynrrd
-- rootpy
+- rootpy (installed on Linux Ubuntu 16.04 via ```conda install -c https://conda.anaconda.org/nlesc root rootpy```)
 
 
 Toolkit Functions
