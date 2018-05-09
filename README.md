@@ -19,11 +19,13 @@ Software System Setup
 
 - Python 2.7.14.final.0 Anaconda 4.4.10 (64-bit) for Mac OS or Ubuntu Linux
 - On UCSF PRL Terra server, in your personal account, make sure to add the following line in the ~/.bashrc file
+
 ```
 # added by Anaconda2 4.4.10 installer
 export PATH="/data1/packages/anaconda2/bin:$PATH"
 ```
 - Activate the following anaconda environment before running the code on UCSF PRL Terra server
+
 ```
 source activate py27-root
 ```
@@ -104,6 +106,7 @@ Before running the following commands, be sure to do the following:
 
 - Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
 - Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://git.radiology.ucsf.edu/PRL/VoxelizedMonteCarloDosimetry)
+
 ```
 ./CT2G4files.py inputfile/________.json
 ```
@@ -112,6 +115,7 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 ##### Compute the Dose Factors from Monte Calor Simulations
 - Process the Monte-Carlo simualtion output files to compute the dose factors for a given patient (S-values and etc.)
 - Save the S-value from all source-to-target organ pairs into the MySQL database (UCSFDoseDB: DoseInfo table)
+
 ```
 ./getSvalue_mysql.py inputfile/________.json
 ```
@@ -119,6 +123,7 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 ##### Compute the Organ Mass and Volume of a given patient geometry
 - Compute the mass and volume of all source organs defined in .json
 - Save the organ mass, volume and name into the MySQL database (UCSFDoseDB: GeoInfo table)
+
 ```
 ./OrganMass_mysql.py inputfile/________.json
 ```
@@ -129,6 +134,7 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 - Save the patient data info (pt_id, therapy dose, etc.) in the MySQL database (UCSFDoseDB: MIBGPTInfo table)
 - Save the total absorbed dose to each organ/tissue in the MySQL database (UCSFDoseDB: AbsorbedDoseInfo table)
 - Plot the final absorbed dose, residence time, and organ mass for each target organ and save in the directory [PTdir]/Summary/
+
 ```
 ./ResTime_mysql.py inputfile/________.json
 ```
@@ -136,7 +142,8 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 ##### MySQL Database
 - All the simulation and dose data are stored in a MySQL database named 'UCSFDoseDB' on UCSF PRL Terra server
 - The username and password to the database can be found in a user-based file
-- To interact with the database via MySQL by 
+- To interact with the database via MySQL
+
 ```
 > myql -u root -p
 [type in password]
@@ -145,15 +152,18 @@ mysql> use UCSFDoseDB;
 mysql> show tables; 
 ```
 - To get all the data in a table, e.g. SimInfo,
+
 ```
 select * from Siminfo; 
 ```
 - To query a table of absorbed dose, residence time, organ mass and volume for pt_id=6 and geo_id=segCT_MIBGTPT6,
+
 ```
 select c.OrganName,c.ResTime_BqhrPerBq,c.AbsorbedDose_mGy,d.Volume_cm3,d.Mass_g from (select a.pt_id,a.OrganName,ResTime_BqhrPerBq,AbsorbedDose_mGy from (ResTimeInfo a INNER JOIN AbsorbedDoseInfo b ON a.pt_id=b.pt_id and a.OrganName=b.TargetOrgan) where a.pt_id=6) as c INNER JOIN (select * from GeoInfo where geo_id='segCT_MIBGPT6') as d ON c.OrganName=d.OrganName;
 ```
 
 - To save the above query into a dataframe (if using Python Pandas package)
+
 ```python
 import pandas as pd
 import MySQLdb as mdb
