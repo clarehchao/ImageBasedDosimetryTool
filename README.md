@@ -26,7 +26,6 @@ export PATH="/data1/packages/anaconda2/bin:$PATH"
 - Activate the following anaconda environment before running the code on UCSF PRL Terra server
 ```
 source activate py27-root
-
 ```
 
 If any case, you are not using PRL server to run this toolkit, one can still run this toolkit by [installing Anaconda python] (https://www.continuum.io/downloads) and be sure to install the following packages via binstar or conda install:
@@ -138,22 +137,20 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 - All the simulation and dose data are stored in a MySQL database named 'UCSFDoseDB' on UCSF PRL Terra server
 - The username and password to the database can be found in a user-based file
 - To interact with the database via MySQL by 
-```commandline
+```
 > myql -u root -p
 [type in password]
 
 mysql> use UCSFDoseDB;
 mysql> show tables; 
-
 ```
 - To get all the data in a table, e.g. SimInfo,
-```mysql
+```
 select * from Siminfo; 
 ```
 - To query a table of absorbed dose, residence time, organ mass and volume for pt_id=6 and geo_id=segCT_MIBGTPT6,
 ```
 select c.OrganName,c.ResTime_BqhrPerBq,c.AbsorbedDose_mGy,d.Volume_cm3,d.Mass_g from (select a.pt_id,a.OrganName,ResTime_BqhrPerBq,AbsorbedDose_mGy from (ResTimeInfo a INNER JOIN AbsorbedDoseInfo b ON a.pt_id=b.pt_id and a.OrganName=b.TargetOrgan) where a.pt_id=6) as c INNER JOIN (select * from GeoInfo where geo_id='segCT_MIBGPT6') as d ON c.OrganName=d.OrganName;
-
 ```
 
 - To save the above query into a dataframe (if using Python Pandas package)
