@@ -24,7 +24,7 @@ Software System Setup
 export PATH="/data1/packages/anaconda2/bin:$PATH"
 ```
 - Activate the following anaconda environment before running the code on UCSF PRL Terra server
-```
+```commandline
 source activate py27-root
 ```
 
