@@ -113,8 +113,10 @@ Before running the following commands, be sure to do the following:
 Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code will only create the source map defined in 'srcname' in the .json file.
 
 ##### Compute the Dose Factors from Monte Calor Simulations
-- Process the Monte-Carlo simualtion output files to compute the dose factors for a given patient (S-values and etc.)
-- Save the S-value from all source-to-target organ pairs into the MySQL database (UCSFDoseDB: DoseInfo table)
+- Process and save the S-value from all source-to-target organ pairs into the MySQL database (UCSFDoseDB: DoseInfo table)
+- Run the below command after finishing running all the needed S-value Monte Carlo simulation
+- No need to convert the output .root file to .dat file since rootpy python package allows direct read/access to a .root file
+
 
 ```
 ./getSvalue_mysql.py inputfile/________.json
