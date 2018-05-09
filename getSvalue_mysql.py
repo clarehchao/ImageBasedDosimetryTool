@@ -2,12 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from DBTool import DoseDB as ddb
-from ImVolTool import xyz2vol as xv
 from ImVolTool import FileIO as fi
-import numpy as np
 import VoxelizedDoseContainer as vdc
 import MySQLdb as mdb
-import os
 import sys
 
 if __name__ == '__main__':
@@ -31,10 +28,8 @@ if __name__ == '__main__':
     thedoseobj.loadGeoVol()
     
     # start the connection with database and others
-    # this works on Higgs as if one specifies 'localhost', it tries to connect via default /tmp/mysql.socket
-    # see http://stackoverflow.com/questions/4662364/cant-connect-to-localhost-using-pythons-mysqldb
-    #con = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
-    con = mdb.connect('127.0.0.1','testuser','test000','UCSFDoseDB')
+    db_pw = ddb.get_DB_auth_info(param_dict['DB_auth_dir'], param_dict['DB_usr'])
+    con = mdb.connect(host='127.0.0.1', user=param_dict['DB_usr'], passwd=db_pw, db='UCSFDoseDB')
     simpkg = 'G4.9.6.p02'
 
     # check SimInfo and DoseInfo tables exist

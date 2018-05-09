@@ -1,7 +1,6 @@
 import json
 import pandas as pd
-import dicom, dicom.UID
-from dicom.dataset import Dataset, FileDataset
+from pydicom.dataset import Dataset, FileDataset
 import numpy as np
 import datetime, time
 import nrrd

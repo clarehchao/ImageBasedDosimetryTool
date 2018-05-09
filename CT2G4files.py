@@ -8,8 +8,6 @@ import numpy as np
 import Transformer as tf
 import sys
 import os
-from DBTool import DoseDB as ddb
-import MySQLdb as mdb
 
 
 """
@@ -61,7 +59,12 @@ if __name__ == '__main__':
             xv.SaveFlattenVol(vol,binfname,param_dict['binfwtype'])
 
         # get the CT dicom volume
-        ctdxyz,ctnxyz,ctvol = xv.Dicom2Vol_v2(param_dict['ctdir'])
+        if any(ff.endswith('.DCM') for ff in os.listdir(param_dict['ctdir'])):
+            ctdxyz, ctnxyz, ctvol = xv.Dicom2Vol(param_dict['ctdir'])
+        elif any(ff.endswith('.dcm') for ff in os.listdir(param_dict['ctdir'])):
+            ctdxyz,ctnxyz,ctvol = xv.Dicom2Vol_v2(param_dict['ctdir'])
+        else:
+            sys.exit('WAIT! Did not find any .dcm or .DCM files in {}! Exit program ... '.format(param_dict['ctdir']))
         xv.SaveFlattenVol(ctvol, '{}/ctvol.bin'.format(thedir), 'float32')
 
         # segment via threshold
@@ -107,17 +110,7 @@ if __name__ == '__main__':
         # write sourcemap based on the geometry volume
         tf.makeSourceMapFile(param_dict['srcname'])
 
-    # Compute the organ mass & volume
-    print 'Compute the organ mass and volume..'
-    tf.ComputeOrganMass()
-    print tf.theOrganMassDF
 
-    # Insert the mass info into the mysql database
-    con = mdb.connect(host='127.0.0.1', user='root', passwd='TWvachian81', db='UCSFDoseDB')
-    # con = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
-    #ddb.CreateTableDB2(con)
-    varags = param_dict['geotag']
-    ddb.Insert2DB2(con,tf.theOrganMassDF,varags)
 
 
 

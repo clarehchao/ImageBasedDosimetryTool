@@ -25,7 +25,9 @@ if __name__ == '__main__':
     
 
     # create a ResTime Constructor with initial variable setup
-    theRT = rt.ResTime(ptdir,param_dict['petdirs'],param_dict['therapy_isotope_halflife_day']*24.,param_dict['img_isotope_halflife_day']*24., param_dict['srcname'], param_dict['VHDMSDdir'])
+    theRT = rt.ResTime(ptdir,param_dict['petdirs'],param_dict['therapy_isotope_halflife_day']*24.,
+                       param_dict['img_isotope_halflife_day']*24., param_dict['srcname'], param_dict['VHDMSDdir'],
+                       param_dict['DB_auth_dir'], param_dict['DB_usr'])
     theRT.InitialSetUp()
     #print theRT.PETdtSinceInj
 
@@ -46,7 +48,7 @@ if __name__ == '__main__':
 
     # Compute the residence for each source organ (get time activity curve and Bi-expo fit)
     theRT.ComputeRT(isplot=param_dict['isFitPlot'])
-    print(theRT.theResTimeHrDF)
+    # print(theRT.theResTimeHrDF)
 
     # # fname = '{}/theRTdf_PT{}.csv'.format(theAMIDEVOIdir, param_dict['PTid'])
     # # theRT.theRTdf.to_csv(fname)
@@ -54,12 +56,12 @@ if __name__ == '__main__':
     # compute the final organ dose in mGy considering the MIBG therapy dose and dose contribution from all source organs
     I131MIBGinjDoseMBq = param_dict['I131MIBGinjDosemCi']*37.
     theRT.ComputeOrganDose([param_dict['geotag']],param_dict['simpkg'],I131MIBGinjDoseMBq)
-    print(theRT.theOrganDosemGy)
+    # print(theRT.theOrganDosemGy)
     # fname = '{}/Summary/theOrganDosemGy_PT{}.csv'.format(ptdir, param_dict['PTid'])
     # theRT.theOrganDosemGy.to_csv(fname)
 
     theRT.ComputeEffectiveDose()
-    print(theRT.theED)
+    # print(theRT.theED)
 
     # Save patient info, ResTime, absorbed dose data into database
     # Initialize the MySQL connection

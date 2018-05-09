@@ -1,12 +1,14 @@
 from __future__ import division
 import numpy as np
-import dicom  # dicom reader package
+import pydicom  # dicom reader package
 import glob   # get all the files in a directory
 import sys
 import os
 import re
 import errno
 import pandas as pd
+import ROOT
+from root_numpy import tree2array
 
 def IsInBound(val,low,high):
     """
@@ -73,6 +75,7 @@ def Xyz2Vol(fname,ftype,dxyz,xyz0,nxyz,nskiprow,dataindx):
     #data = np.loadtxt(fname,skiprows=1)
     #val,wt,xm,ym,zm = np.hsplit(data,data.shape[1])
     #ix0,iy0,iz0,xm,ym,zm = np.hsplit(data,data.shape[1])
+
     # a more general approach to parse the imported data
     data = np.loadtxt(fname,skiprows=nskiprow)
     xm,ym,zm = np.hsplit(data[:,dataindx],len(dataindx))
@@ -120,8 +123,19 @@ def Coord2Vol(fname,ftype,nxyz):
 
     the indexing method produces the same result as Xyz2Vol if one look at vol.reshape((nz,nx,ny))
     """
-    data = np.loadtxt(fname)
-    print 'In xyz2vol:Coord2Vol function, read the file: {}'.format(fname)
+
+    if fname.endswith('.dat'):
+        data = np.loadtxt(fname)
+        print('In xyz2vol:Coord2Vol function, read the .dat file: {}'.format(fname))
+    elif fname.endswith('.root'):
+        rfile = ROOT.TFile(fname)
+        intree = rfile.Get('EdepTree')
+        arr = tree2array(intree)
+        data = np.stack((arr['posX'], arr['posY'], arr['posZ'], arr['eng']), axis=1)
+        print('In xyz2vol:Coord2Vol function, read the .root file: {}'.format(fname))
+    else:
+        print('::O_O In xyz2vol:Not correct dose data file extension::')
+
     nx,ny,nz = nxyz
     
     #get the x,y,z position, first three cols of 'data'
@@ -221,7 +235,7 @@ def Dicom2Vol(dcdir):    #instance member function
     flist = range(1,len(alldcfiles)+1)
     for i in range(len(flist)):
         dcfile = '%s/%sI%d.DCM' % (dcdir,dcftag,flist[i])
-        dc = dicom.read_file(dcfile)
+        dc = pydicom.dcmread(dcfile)
         if i == 0:  # initialize
             dxyz = np.array([dc.PixelSpacing[0],dc.PixelSpacing[1],dc.SliceThickness])
             nx = dc.Columns
@@ -241,7 +255,7 @@ def Dicom2Vol_v2(dcdir):    #instance member function
     if alldcfiles:
         for i in range(len(alldcfiles)):
             dcfile = alldcfiles[i]
-            dc = dicom.read_file(dcfile)
+            dc = pydicom.dcmread(dcfile)
             if i == 0:  # initialize
                 dxyz = np.array([dc.PixelSpacing[0],dc.PixelSpacing[1],dc.SliceThickness])
                 nx = dc.Columns

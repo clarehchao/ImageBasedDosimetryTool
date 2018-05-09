@@ -6,9 +6,10 @@ from ImVolTool import ImVolFit as ivfit
 import MySQLdb as mdb
 import glob
 import os
-import dicom
+import pydicom
 from datetime import datetime
-from dicom.tag import Tag
+from pydicom.tag import Tag
+from DBTool import DoseDB as ddb
 
 def check_date_format(ss):
     for fmt in ('%Y%m%d%H%M%S.%f', '%Y%m%d%H%M%S'):
@@ -83,6 +84,8 @@ class ResTime(object):
         self.img_isotope_halflife = args[3]     # unit: hour
         self.srcname_dict = args[4]
         self.Frdatadir = args[5]
+        self.DB_auth_dir = args[6]
+        self.DB_usr = args[7]
 
         self.PMODdir = None
         self.theTumordf = None
@@ -103,9 +106,9 @@ class ResTime(object):
         #self.theResTimeHrDF = pd.DataFrame(columns = ['OrganName','p1','p2','p3','p4','r2','Residence Time (Bq-hr/Bq)'])
     
         # mysql connection setup to connect to the local mysql database
-        #self.mysqlcon = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
-        # self.mysqlcon = mdb.connect('127.0.0.1','testuser','test000','UCSFDoseDB')
-        self.mysqlcon = mdb.connect(host='127.0.0.1', user='root', passwd='TWvachian81', db='UCSFDoseDB')
+        db_pw = ddb.get_DB_auth_info(self.DB_auth_dir, self.DB_usr)
+        db_name = 'UCSFDoseDB'
+        self.mysqlcon = mdb.connect(host='127.0.0.1', user=self.DB_usr, passwd=db_pw, db=db_name)
 
         self.TP_slope_idx = [(1,2),(2,3),(1,3)]
 
@@ -117,7 +120,7 @@ class ResTime(object):
             petdir = '{}/IM/{}'.format(self.PTdir,self.PETsubdirs[ii])
             # print('petdir = {}'.format(petdir))
             allfiles = os.walk(petdir).next()[2]
-            thedc = dicom.read_file('{}/{}'.format(petdir,allfiles[0]))
+            thedc = pydicom.dcmread('{}/{}'.format(petdir,allfiles[0]))
 
             if thedc.has_key(Tag(0x0009,0x100d)):  # Discovery STE format
                 scanDT = check_date_format(thedc[0x0009, 0x100d].value)

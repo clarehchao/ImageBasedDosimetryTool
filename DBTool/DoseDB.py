@@ -2,7 +2,6 @@ from __future__ import division
 import re
 import pandas as ps
 import numpy as np
-import getpass
 import os
 
 """

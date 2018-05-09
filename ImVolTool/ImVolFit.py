@@ -293,7 +293,8 @@ def FitBiExpo_ResTime(xdata,ydata,pixdim,lambda_p,isplot=False,fname=None):
         fmod.set_param_hint('b0',value=initialp['b0'][ii])
         fmod.set_param_hint('a1',value=initialp['a1'][ii])
         fmod.set_param_hint('b1',value=initialp['b1'][ii])
-        result = fmod.fit(np.squeeze(nydata),x=np.squeeze(xdata),params=fmod.make_params(),fit_kws={'nan_policy':'omit'})
+        # result = fmod.fit(np.squeeze(nydata),x=np.squeeze(xdata),params=fmod.make_params(),fit_kws={'nan_policy':'omit'})
+        result = fmod.fit(np.squeeze(nydata), x=np.squeeze(xdata), params=fmod.make_params(), nan_policy='omit')
         param = result.params.valuesdict()
         auc = param['a0']/(param['b0'] + lambda_p) + param['a1']/(param['b1'] + lambda_p)
         if result.chisqr > chisqrThresh or auc < 0.0:
@@ -308,7 +309,8 @@ def FitBiExpo_ResTime(xdata,ydata,pixdim,lambda_p,isplot=False,fname=None):
             fmod.set_param_hint('b0',value=initialp['b0'][ii])
             fmod.set_param_hint('a1',value=initialp['a1'][ii])
             fmod.set_param_hint('b1',value=initialp['b1'][ii])
-            result = fmod.fit(np.squeeze(nydata),x=np.squeeze(xdata),params=fmod.make_params(),method='tnc',fit_kws={'nan_policy':'omit'})
+            # result = fmod.fit(np.squeeze(nydata),x=np.squeeze(xdata),params=fmod.make_params(),method='tnc',fit_kws={'nan_policy':'omit'})
+            result = fmod.fit(np.squeeze(nydata), x=np.squeeze(xdata), params=fmod.make_params(), nan_policy='omit')
             if result.chisqr > chisqrThresh or auc < 0.0:
                 print 'fit with tnc: chisqr = {}, auc = {}'.format(result.chisqr,auc)
             else:

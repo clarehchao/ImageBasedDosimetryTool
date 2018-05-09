@@ -80,7 +80,8 @@ class VoxelizedDoseContainer:
         self.simNevent = 0  #update the number of events in the simulation for dose output
         self.theEdepVol = np.zeros(self.theNxNyNz,dtype=np.float32)
         for r in range(run1,run2):
-            thefile = '{}/Run{}/BustOutRoot/Edep.dat'.format(self.theDoseDir,r)
+            #thefile = '{}/Run{}/BustOutRoot/Edep.dat'.format(self.theDoseDir,r)
+            thefile = '{}/Run{}/RootData/Edep.root'.format(self.theDoseDir, r)
             tmp = xv.Coord2Vol(thefile,self.edepftype,self.theNxyz)
             self.theEdepVol = self.theEdepVol + tmp
         

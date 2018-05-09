@@ -38,11 +38,9 @@ if __name__ == '__main__':
     
 
     # Insert the mass info into the mysql database
-    # this works on Higgs as if one specifies 'localhost', it tries to connect via default /tmp/mysql.socket
-    # see http://stackoverflow.com/questions/4662364/cant-connect-to-localhost-using-pythons-mysqldb
-    #con = mdb.connect('localhost','testuser','test000','UCSFDoseDB')
-    con = mdb.connect('127.0.0.1','testuser','test000','UCSFDoseDB')
-    
+    db_pw = ddb.get_DB_auth_info(param_dict['DB_auth_dir'], param_dict['DB_usr'])
+    con = mdb.connect(host='127.0.0.1', user=param_dict['DB_usr'], passwd=db_pw, db='UCSFDoseDB')
+
     # check to see if the GeoInfo table exists
     tablename = 'GeoInfo'
     if ddb.CheckTableExist(con,tablename):

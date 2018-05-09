@@ -1,7 +1,5 @@
 from __future__ import division
 import numpy as np
-import dicom  # dicom reader package
-import glob   # get all the files in a directory
 import math
 import os
 import errno
@@ -125,22 +123,7 @@ class Transformer:
     def Bin2Vol(self):      #instance member function
         tmp = np.fromfile(self.theVolfile,dtype=self.theFtype)
         self.theVol = tmp.reshape((self.nz,self.ny,self.nx),order='C')
-    
-    """
-    def Dicom2Vol(self):    #instance member function
-        alldcfiles = glob.glob('%s/*.DCM' % self.theVolfile)
-        for i in range(0,nz):
-            dc = dicom.read_file(alldcfiles[i])
-            if i == 0:  # initialize
-                self.dx,self.dy = dc.PixelSpacing
-                self.dz = dc.SliceThickness
-                self.nx = dc.Columns
-                self.ny = dc.Rows
-                self.nz = len(alldcfiles)
-                self.vol = np.empty((self.nz,self.ny,self.nx))
-            im = thedc.pixel_array
-            self.theVol[i,:,:] = im
-    """
+
            
     def GetOrganInfo(self):  #instance member function
         # read organtag vs name info from fname into a dictionary
@@ -337,7 +320,8 @@ class Transformer:
             for oname in oo[1]:  # go through all elements in the organ tag(s) that define a given srcname
                 otag = self.theOrganInfo[oname]
                 isOrgan = np.in1d(self.theVol,otag)
-                rho = ecompdf.loc[ecompdf['OrganTag'] == otag,'Density (g/cm3)'].iget(0,axis=1)
+                # rho = ecompdf.loc[ecompdf['OrganTag'] == otag,'Density (g/cm3)'].iget(0,axis=1)
+                rho = ecompdf.loc[ecompdf['OrganTag'] == otag, 'Density (g/cm3)'].iat[0]
                 if np.any(isOrgan):
                     vol = vol + np.sum(isOrgan)*self.dxyz  #unit: cm^3
                     mass = mass + vol*rho  #unit: g
