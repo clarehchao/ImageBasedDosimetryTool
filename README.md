@@ -18,13 +18,13 @@ Software System Setup
 --------------------
 
 - Python 2.7.14.final.0 Anaconda 4.4.10 (64-bit) for Mac OS or Ubuntu Linux
-- on UCSF PRL Terra server, in your personal account, make sure to add the following line in the ~/.bashrc file
+- On UCSF PRL Terra server, in your personal account, make sure to add the following line in the ~/.bashrc file
 ```
 # added by Anaconda2 4.4.10 installer
 export PATH="/data1/packages/anaconda2/bin:$PATH"
 ```
 - Activate the following anaconda environment before running the code on UCSF PRL Terra server
-```commandline
+```
 source activate py27-root
 ```
 
@@ -137,7 +137,7 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 - All the simulation and dose data are stored in a MySQL database named 'UCSFDoseDB' on UCSF PRL Terra server
 - The username and password to the database can be found in a user-based file
 - To interact with the database via MySQL by 
-```commandline
+```
 > myql -u root -p
 [type in password]
 
