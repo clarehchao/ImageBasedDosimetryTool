@@ -137,7 +137,7 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 - All the simulation and dose data are stored in a MySQL database named 'UCSFDoseDB' on UCSF PRL Terra server
 - The username and password to the database can be found in a user-based file
 - To interact with the database via MySQL by 
-```
+```commandline
 > myql -u root -p
 [type in password]
 
