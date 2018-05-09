@@ -24,9 +24,8 @@ Software System Setup
 export PATH="/data1/packages/anaconda2/bin:$PATH"
 ```
 - Activate the following anaconda environment before running the code on UCSF PRL Terra server
-```
+```commandline
 source activate py27-root
-
 ```
 
 If any case, you are not using PRL server to run this toolkit, one can still run this toolkit by [installing Anaconda python] (https://www.continuum.io/downloads) and be sure to install the following packages via binstar or conda install:
