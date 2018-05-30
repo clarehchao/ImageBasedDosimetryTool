@@ -266,7 +266,6 @@ class ResTime(object):
         #print self.theTumordf.dtypes
         self.theTumordf['Mean*Size(cm3)'] = self.theTumordf['Total(AVR*VOL)[(kBq/cc)*(ccm)]']*1000.
 
-
     def GetAllRTDF(self):
         RTFile2DF = ResTime.RTFile2DF
         
@@ -485,7 +484,10 @@ class ResTime(object):
 
     def ComputeOrganDose(self,theGeoIdlst,theSimPkg,InjDoseMBq):
         # Pull a list of S-value from the database
-        qr = "SELECT geo_id, b.src_organ, a.target_organ, a.SV_mean from DoseInfo a JOIN SimInfo b ON a.sim_id = b.sim_id WHERE geo_id in ({}) and simpkg = '{}'".format(','.join('"{0}"'.format(w) for w in theGeoIdlst),theSimPkg)
+	if type(theSimPkg) is list:
+        	qr = "SELECT geo_id, b.src_organ, a.target_organ, a.SV_mean from DoseInfo a JOIN SimInfo b ON a.sim_id = b.sim_id WHERE geo_id in ({}) and simpkg in ({})".format(','.join('"{0}"'.format(w) for w in theGeoIdlst),','.join('"{}"'.format(w) for w in theSimPkg))
+	else:
+		qr = "SELECT geo_id, b.src_organ, a.target_organ, a.SV_mean from DoseInfo a JOIN SimInfo b ON a.sim_id = b.sim_id WHERE geo_id in ({}) and simpkg = '{}'".format(','.join('"{0}"'.format(w) for w in theGeoIdlst),theSimPkg)
         df_all = pd.read_sql(qr,self.mysqlcon)
 
         # # Keep the src organ name consistent: use the src name nomenclature defined in the srcname dct key in the .json file
@@ -499,7 +501,6 @@ class ResTime(object):
         df_all['src_organ_lower'] = df_all['src_organ'].str.lower()
         df_join1 = pd.merge(self.theResTimeHrDF,df_all,left_on = 'matched_OrganName_lower',right_on = 'src_organ_lower',how='left')
         #print len(df_join1.src_organ.unique()), len(theTestlst)
-
 
         # create another df without 'totalbody' as src_organ
         df_dose = df_join1[df_join1['src_organ'] != 'TotalBody']
@@ -548,8 +549,11 @@ class ResTime(object):
         self.theResTimeMass = df_join1.groupby('src_organ').agg({'Residence Time (Bq-hr/Bq)':np.mean})
         self.theResTimeMass['Mass_g'] = df_join2.groupby('src_organ').agg({'Mass_g':np.mean})
         self.theResTimeMass['Volume_cm3'] = df_join2.groupby('src_organ').agg({'Volume_cm3':np.mean})
-        self.theResTimeMass = self.theResTimeMass.append(pd.DataFrame({'Residence Time (Bq-hr/Bq)':ResTime_RB,'Mass_g':mass_RB,'Volume_cm3':vol_RB},index=['RemainderBody']))
-        self.theResTimeMass.reset_index(level=0,inplace=True)
+	tmp = pd.DataFrame({'Residence Time (Bq-hr/Bq)':ResTime_RB,'Mass_g':mass_RB,'Volume_cm3':vol_RB},index=['RemainderBody'])
+	tmp.rename_axis('src_organ', inplace=True)
+        self.theResTimeMass = self.theResTimeMass.append(tmp)
+	self.theResTimeMass.reset_index(level=0,inplace=True)
+
 
     def ComputeEffectiveDose(self, wt_type=''):
         fname = '{}/OrganData/EffectiveDoseWt.csv'.format(self.Frdatadir)

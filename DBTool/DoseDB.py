@@ -85,6 +85,10 @@ def CreateTableDB_EDInfo(con):
         EffectiveDose_Sv DOUBLE NULL, PRIMARY KEY(id));")
                      
 def Insert2DB_GeoInfo(con,df,vargs):
+    # get table size
+    last_table_id = GetTableSize(con, 'GeoInfo')
+    start_table_id = last_table_id+ 1
+
     geo_id = vargs
     
     df_fill = df.fillna(0)
@@ -92,18 +96,30 @@ def Insert2DB_GeoInfo(con,df,vargs):
         cur = con.cursor()
         tmpdf = df_fill
         tmpdf['geo_id'] = geo_id
-        tmplst = list(tmpdf.loc[:,['geo_id','OrganName','Volume (cm3)','Mass (g)']].itertuples(index=False))
-        cur.executemany("INSERT INTO GeoInfo(geo_id,OrganName,Volume_cm3,Mass_g) VALUES(%s,%s,%s,%s);",tmplst)
+        tmplst = [start_table_id] + list(tmpdf.loc[:,['geo_id','OrganName','Volume (cm3)','Mass (g)']].itertuples(index=False))
+        cur.executemany("INSERT INTO GeoInfo(id,geo_id,OrganName,Volume_cm3,Mass_g) VALUES(%s,%s,%s,%s,%s);",tmplst)
+
         
 def Insert2DB_MIBGPTInfo(con,df):
+    # get table size
+    last_table_id = GetTableSize(con, 'MIBGPTInfo')
+    start_table_id = last_table_id+ 1
+
     # make sure there is no NAN in the dataframe
     df_fill = df.fillna(0)
     with con:
         cur = con.cursor()
-        tmplst = list(df_fill.loc[:,['PTid','PETCTdir','ResTimedir','geo_id','I131MIBGDose_mCi']].itertuples(index=False))
-        cur.executemany("INSERT INTO MIBGPTInfo(pt_id,PETCTDir,ResTimeDir,geo_id,I131MIBGDose_mCi) VALUES(%s,%s,%s,%s,%s);",tmplst)
+	colname_lst = ['PTid','PETCTdir','ResTimedir','geo_id','I131MIBGDose_mCi']
+	df_tmp = df_fill.loc[:, colname_lst]
+	df_tmp.insert(0, 'id', range(start_table_id, start_table_id + len(df_tmp)))
+        tmplst = list(df_tmp.itertuples(index=False))
+        cur.executemany("INSERT INTO MIBGPTInfo(id,pt_id,PETCTDir,ResTimeDir,geo_id,I131MIBGDose_mCi) VALUES(%s,%s,%s,%s,%s,%s);",tmplst)
 
 def Insert2DB_ResTimeInfo(con,df,vargs):
+    # get table size
+    last_table_id = GetTableSize(con, 'ResTimeInfo')
+    start_table_id = last_table_id+ 1
+
     ptid = vargs
 
     # make sure there is no NAN in the dataframe
@@ -116,10 +132,17 @@ def Insert2DB_ResTimeInfo(con,df,vargs):
         colname_lst = ['ptid','matched_OrganName','a0','b0','a1','b1','ymax','r2','Residence Time (Bq-hr/Bq)'] + ['t{}_hr'.format(x) for x in range(5)] + \
                       ['pInjAct{}'.format(x) for x in range(5)] + ['SUV{}'.format(x) for x in range(5)] + \
                       ['pIA_{}_{}TP_slope'.format(a,b) for a,b in TP_slope_idx_lst] + ['SUV_{}_{}TP_slope'.format(a,b) for a,b in TP_slope_idx_lst]
-        tmplst = list(tmpdf.loc[:, colname_lst].itertuples(index=False))
-        cur.executemany("INSERT INTO ResTimeInfo(pt_id,OrganName,a0,b0,a1,b1,ymax,r2,ResTime_BqhrPerBq,t0_hr,t1_hr,t2_hr,t3_hr,t4_hr,pInjAct0,pInjAct1,pInjAct2,pInjAct3,pInjAct4,SUV0,SUV1,SUV2,SUV3,SUV4,pIA_1_2TP_slope,pIA_2_3TP_slope,pIA_1_3TP_slope, SUV_1_2TP_slope, SUV_2_3TP_slope,SUV_1_3TP_slope) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);",tmplst)
+	df_tmp = tmpdf.loc[:, colname_lst]
+	df_tmp.insert(0, 'id', range(start_table_id, start_table_id + len(df_tmp)))
+        tmplst = list(df_tmp.itertuples(index=False))
+	
+        cur.executemany("INSERT INTO ResTimeInfo(id, pt_id,OrganName,a0,b0,a1,b1,ymax,r2,ResTime_BqhrPerBq,t0_hr,t1_hr,t2_hr,t3_hr,t4_hr,pInjAct0,pInjAct1,pInjAct2,pInjAct3,pInjAct4,SUV0,SUV1,SUV2,SUV3,SUV4,pIA_1_2TP_slope,pIA_2_3TP_slope,pIA_1_3TP_slope, SUV_1_2TP_slope, SUV_2_3TP_slope,SUV_1_3TP_slope) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);",tmplst)
 
 def Insert2DB_AbsorbedDoseInfo(con,df,vargs):
+    # get table size
+    last_table_id = GetTableSize(con, 'AbsorbedDoseInfo')
+    start_table_id = last_table_id+ 1
+
     ptid = vargs
 
     # make sure there is no NAN in the dataframe
@@ -128,9 +151,12 @@ def Insert2DB_AbsorbedDoseInfo(con,df,vargs):
         cur = con.cursor()
         tmpdf = df_fill
         tmpdf['ptid'] = ptid
-        tmplst = list(tmpdf.loc[:,['ptid','target_organ','OrganDose(mGy)']].itertuples(index=False))
-        cur.executemany("INSERT INTO AbsorbedDoseInfo(pt_id,TargetOrgan,AbsorbedDose_mGy) VALUES(%s,%s,%s);",tmplst)
-
+	
+	colname_lst = ['ptid','target_organ','OrganDose(mGy)']
+	df_tmp = tmpdf.loc[:, colname_lst]
+	df_tmp.insert(0, 'id', range(start_table_id, start_table_id + len(df_tmp)))
+        tmplst = list(df_tmp.itertuples(index=False))
+        cur.executemany("INSERT INTO AbsorbedDoseInfo(id,pt_id,TargetOrgan,AbsorbedDose_mGy) VALUES(%s,%s,%s,%s);",tmplst)
     
 def Insert2DB_DoseSimInfo(con,df,varags):
     target_organs = df.index
@@ -147,8 +173,8 @@ def Insert2DB_DoseSimInfo(con,df,varags):
                 
 def Insert2DB_fancydf_DoseSimInfo(con,df,varags):
     target_organs = df.index
-    last_sim_id = ReadDBSize(con)
-    start_sim_id = int(last_sim_id) + 1
+    last_sim_id = GetTableSize(con, 'SimInfo')
+    start_sim_id = last_sim_id + 1
     #simpkg,geo_id,src_particle,src_organ,Nevent,Nrun = varags
     with con:
         cur = con.cursor()
@@ -160,8 +186,8 @@ def Insert2DB_fancydf_DoseSimInfo(con,df,varags):
             cur.execute("INSERT INTO DoseInfo(sim_id,target_organ,SV_mean,SV_std) VALUES(%s,%s,%s,%s);",tmp)
             
 def Insert2DB_fancydict_DoseSimInfo(con,dct,varags):
-    last_sim_id = ReadDBSize(con)
-    start_sim_id = int(last_sim_id) + 1
+    last_sim_id = GetTableSize(con, 'SimInfo')
+    start_sim_id = last_sim_id + 1
     #simpkg,geo_id,src_particle,src_organ,Nevent,Nrun = varags
     with con:
         cur = con.cursor()
@@ -175,17 +201,21 @@ def Insert2DB_fancydict_DoseSimInfo(con,dct,varags):
 
 
 def Insert2DB_EDInfo(con, vargs):
+    # get table size
+    last_table_id = GetTableSize(con, 'EDInfo')
+    start_table_id = last_table_id+ 1
+
     #pt_id, geo_tag, ED = vargs
     with con:
         cur = con.cursor()
-        cur.execute("INSERT INTO EDInfo(pt_id,geo_id,EffectiveDose_Sv) VALUES(%s,%s,%s);", vargs)
+        cur.execute("INSERT INTO EDInfo(id,pt_id,geo_id,EffectiveDose_Sv) VALUES(%s,%s,%s,%s);", [start_table_id] + vargs)
        
-def ReadDBSize(con):
+def GetTableSize(con, the_table_name):
     with con:
         cur = con.cursor()
-        cur.execute("SELECT COUNT(*) FROM SimInfo")
+        cur.execute("SELECT COUNT(*) FROM {}".format(the_table_name))
         tmp = cur.fetchone()
-    return tmp[0]
+    return int(tmp[0])
     
 def GetNevent(fname):
     # Determine the number of total events in the dose log file
@@ -212,7 +242,6 @@ def FindIntermIrun(dosedir,run1,inc1,neventlist):
 def Fname2Data(fname,simfdir):
     # example: SVstatsufh10f_1_ufh10f_1_UBCont_I131_Run1-69_rinc20_4_G4.9.6.p02.txt
     tmp1 = re.findall(r'SVstats([\w-]+)_(\w+)_(\w+)_Run(\d+)-(\d+)_rinc([\w-]*)_([\w.]+).txt',fname)  #this separate the filename into sim info
-    print tmp1
     junk,src_organ,src_particle,run1,run2,inc,pkg = tmp1[0]
     tmp2 = re.findall(r'(.+?)_\1+',fname)  #this finds the repeated str, e.g. \1 means 'repeat the pattern in the space before \1, which is '(.+?)_'
     geo_id = tmp2[0]

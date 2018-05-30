@@ -13,7 +13,7 @@ if __name__ == '__main__':
     
     # set up data directories
     geodir = '{}/G4INPUT/GeometryIM'.format(param_dict['G4dir'],param_dict['geotag'])
-    datadir = '{}/G4.9.6.p02work/{}/data/GEO_{}/SRCMP_{}'.format(param_dict['G4dir'],param_dict['G4AppName'],param_dict['geotag'],param_dict['geotag'])
+    datadir = '{}/{}work/{}/data/GEO_{}/SRCMP_{}'.format(param_dict['G4dir'],param_dict['G4SimPkg'],param_dict['G4AppName'],param_dict['geotag'],param_dict['geotag'])
     
     # find all src organ directories
     #lsubdir = os.listdir(datadir)
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # start the connection with database and others
     db_pw = ddb.get_DB_auth_info(param_dict['DB_auth_dir'], param_dict['DB_usr'])
     con = mdb.connect(host='127.0.0.1', user=param_dict['DB_usr'], passwd=db_pw, db='UCSFDoseDB')
-    simpkg = 'G4.9.6.p02'
+    simpkg = param_dict['G4SimPkg']
 
     # check SimInfo and DoseInfo tables exist
     if ddb.CheckTableExist(con,'SimInfo') and ddb.CheckTableExist(con,'DoseInfo'):
