@@ -11,7 +11,7 @@ A Python Software toolkit to evaluate image-based dosimetry for targeted radionu
 
 ### Reference for nuclear medicine dosimetry:
 
-[Fundamentals of Nuclear Medicine Dosimetry by Michael G. Stabin] (http://www.springer.com/us/book/9780387745787)
+[Fundamentals of Nuclear Medicine Dosimetry by Michael G. Stabin](http://www.springer.com/us/book/9780387745787)
 
 
 Software System Setup
@@ -30,7 +30,7 @@ export PATH="/data1/packages/anaconda2/bin:$PATH"
 source activate py27-root
 ```
 
-If any case, you are not using PRL server to run this toolkit, one can still run this toolkit by [installing Anaconda python] (https://www.continuum.io/downloads) and be sure to install the following packages via binstar or conda install:
+If any case, you are not using PRL server to run this toolkit, one can still run this toolkit by [installing Anaconda python](https://www.continuum.io/downloads) and be sure to install the following packages via binstar or conda install:
 - pydicom
 - mysql-python
 - lmfit
