@@ -141,6 +141,19 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 ./ResTime_mysql.py inputfile/________.json
 ```
 
+##### PET-image Residence Time Investigation
+- Examine the need for evaluating residence time from 4 imaging time
+- Generate scatter plot of Residence Time vs Organ among all patients
+- Generate scatter plot of Absorbed Dose vs Organ among all patients
+- Compute the slope of two imaging time points of PET-based Time Activity Curve (TAC)
+
+```
+./ResTime_Analysis.py [data_DIR] [DB_auth_DIR]
+```
+[data_DIR]: the directory where all files and figures are saved
+[DB_auth_DIR]: the directory where the MySQL database authentication info is
+
+
 ##### MySQL Database
 - All the simulation and dose data are stored in a MySQL database named 'UCSFDoseDB' on UCSF PRL Terra server
 - The username and password to the database can be found in a user-based file
@@ -181,6 +194,7 @@ con = mdb.connect(host=DB_host, user=DB_usr,passwd=DB_pw, db=DB_name)
 qr = 'c.OrganName,c.ResTime_BqhrPerBq,c.AbsorbedDose_mGy,d.Volume_cm3,d.Mass_g from (select a.pt_id,a.OrganName,ResTime_BqhrPerBq,AbsorbedDose_mGy from (ResTimeInfo a INNER JOIN AbsorbedDoseInfo b ON a.pt_id=b.pt_id and a.OrganName=b.TargetOrgan) where a.pt_id=6) as c INNER JOIN (select * from GeoInfo where geo_id=\'segCT_MIBGPT6\') as d ON c.OrganName=d.OrganName;'
 df = pd.read_sql(qr,con)
 ```
+
 
 
 
