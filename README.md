@@ -48,7 +48,11 @@ Before running the following commands, be sure to do the following:
   - Import PET and CT DICOM images into [3DSlicer](https://www.slicer.org/) and perform semi-automatic segmentation of each organ by placing seeds appropriately (see example [here](Seg_demo/3dslicer_demo_pt10.jpg))
   - Once the segmentation is complete, save and export the segmented volume into a .nrrd file
   - One would only need to segment organs from one time-point of the PET/CT imaging
-  - In order import 3DSlicer-segmented volume into Amide, one need to convert the .nrrd file to DICOM images: `./NRRD2DCM.py inputfile/________.json`
+  - In order import 3DSlicer-segmented volume into Amide, one need to convert the .nrrd file to DICOM images
+  ```
+  ./NRRD2DCM.py inputfile/________.json`
+  ```
+  
   - Once all the segmented organs are imported into Amide, compute the PET signal statistics using ROI quantification tool via Amide (Tools > Calculate ROI statistics > Execute) and save the output to .tsv (save one .tsv for each imaging time point, see an example [here](Seg_demo/PET_VOI_Quantification2.png))
   - Remember to manually place a cylinder VOI in Amide to include the entire body of the patient for PET signal quantification of the total body (see an example [here](Seg_demo/PET_VOI_Quantification1.png))
   - To get the raw pixel output of each organ from the CT image, compute the CT signal statistics using ROI quantification tool via Amide and click 'Save Raw Values' once the ROI stats is completed. See an example [here](Seg_demo/CT_VOI_RawValue.png).
