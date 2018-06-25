@@ -55,21 +55,24 @@ Before running the following commands, be sure to do the following:
 
 
 2. Set up the patient data directory [PTdir], e.g. pt_id = 1
-  - PT0001/GeoIMdata/[geo_id]: the raw pixel files of all the segmented organs (roi_raw_data{xxOrganName}.tsv) or .bin (if a binary files for a specific contour is already created)
-  - PT0001/VOIs_Amide: Amide contour files (.xif) for all imaging acquisitions and the ROI statistics of all the contoured VOIs (.tsv)
+  - PT0001/**GeoIMdata/[geo_id]**: the raw pixel files of all the segmented organs (roi_raw_data{xxOrganName}.tsv) or .bin (if a binary files for a specific contour is already created)
+  - PT0001/**VOIs_Amide**: Amide contour files (.xif) for all imaging acquisitions and the ROI statistics of all the contoured VOIs (.tsv)
   - PT0001/PMODData (optional): If one were to use PMOD to contour, this directory includes all the PMOD VOI statistics files (.voistat) for eachh organ at all imaging time points (e.g. PT0001/PMODData/Tumor1/_____.voistat)
-  - PT0001/IM: dicom images of all the PET/CT images acquired at several time points
-  - PT0001/Summary: the output dose plot, residence time and mass vs. target organ plot, and PET/CT images of the patient with identified tumors
+  - PT0001/**IM**: dicom images of all the PET/CT images acquired at several time points
+  - PT0001/**Summary**: the output dose plot, residence time and mass vs. target organ plot, and PET/CT images of the patient with identified tumors
 
-3. Create a .json for the patient case
-  - "G4dir": Geant4 data directory, e.g. "/data2/G4data_Clare",
-  - "VHDMSDdir": toolkit code directory, e.g. "/data1/Proj_I131MIBGTherapy/VHDMSDlite"
-  - "NBptdir": patient directory, e.g. "/data1/Proj_I131MIBGTherapy/ptData",
-  - "fwdir": Geant4 input file WRITE directory, e.g. "/data2/G4data_Clare/G4INPUT",
-  - "ctdir": the dicom image directory of the CT images that the organ contour was based on for CT segmentation, e.g. "/data1/Proj_I131MIBGTherapy/ptData/PT0002/IM/E13450/4",
-  - "petdirs": the image study directory and series number of the PET images 
-  - "geotag": Geant4 geoemtry name, e.g. "segCT_MIBGPT2",
-  - "PTid": the patient ID
+NOTE: the **_directory_** is mandatory to run the script below. 
+
+
+3. Create a .json for the patient case (**_"xxx"_** are key fields to change per patient)
+  - **"G4dir"**: Geant4 data directory, e.g. "/data2/G4data_Clare",
+  - **"VHDMSDdir"**: toolkit code directory, e.g. "/data1/Proj_I131MIBGTherapy/VHDMSDlite"
+  - **"NBptdir"**: patient directory, e.g. "/data1/Proj_I131MIBGTherapy/ptData",
+  - **"fwdir"**: Geant4 input file WRITE directory, e.g. "/data2/G4data_Clare/G4INPUT",
+  - **"ctdir"**: the dicom image directory of the CT images that the organ contour was based on for CT segmentation, e.g. "/data1/Proj_I131MIBGTherapy/ptData/PT0002/IM/E13450/4",
+  - **"petdirs"**: the image study directory and series number of the PET images 
+  - **"geotag"**: Geant4 geoemtry name, e.g. "segCT_MIBGPT2",
+  - **"PTid"**: the patient ID
   - "pmodftag": the format of PMOD .voistat files
   - "img\_isotope\_halflife_day": the half life of the imaging isotope (unit: days)
   - "therapy\_isotope\_halflife_day":the half-life of the therapy isotope (unit: days)
@@ -81,7 +84,7 @@ Before running the following commands, be sure to do the following:
   - "G4SimDataDir": Geant4 simulation data directory and computer name
   - "frtype": binary image data type for file read, e.g."uint8"
   - "frindx": the column index to read from the Amide raw pixel files for building an binary marsk, e.g. [2,3,4]
-  - "ecomptag": the phantom age usd for elemental composition defined in the Monte Carlo simulation geometry, 
+  - **"ecomptag"**: the phantom age usd for elemental composition defined in the Monte Carlo simulation geometry, 
     - "00f" or "00m: newborn female/male
     - "01f" or '01m: 1-year-old female/male
     - "05f" or "05m": 5-year-old female/male
@@ -89,17 +92,16 @@ Before running the following commands, be sure to do the following:
     - "15f" or 15m": 15-year-old female/male
     - "adf" or "adm": adult female/male
   - "binfwtype": file format to the binary mask volume, e.g.: "uint8"
-  - "nxyz": the 3D dimension of the CT image volume, e.g. [512,512,364]
-  - "dxyz": the 3D voxel size of the CT image volume, unit: mm, e.g.: [1.36719,1.36719,5.0]
-  - "xyz0": the origin of the 3D position of the CT image volume in Amide, unit: mm (can be calculated by xyz_center - dxyz*(nxyz-1)*0.5, where xyz_center is found in the 'Center' Tag when right-click on the CT image series in Amide)
+  - **"nxyz"**: the 3D dimension of the CT image volume, e.g. [512,512,364]
+  - **"dxyz"**: the 3D voxel size of the CT image volume, unit: mm, e.g.: [1.36719,1.36719,5.0]
+  - **"xyz0"**: the origin of the 3D position of the CT image volume in Amide, unit: mm (can be calculated by xyz_center - dxyz*(nxyz-1)*0.5, where xyz_center is found in the 'Center' Tag when right-click on the CT image series in Amide)
   - "HUthresh": the HU thresholds for the initial segmentation, e.g.: [-5000,-400,200,1440,5000]
   - "HUthresh_name": the name of the materials segmented using "HUthresh", e.g. ["Air(inbody)","ResidualSoftTissue","Cranium","Teeth"]
-  - "organvoiname": a list of organ name, e.g.: ["Lung","Brain","Heart"]
-  - "tumorvoiname": a list of tumor name, e.g.: ["Tumor1","Tumor2"]
+  - **"organvoiname"**: a list of organ name including tumors, e.g.: ["Lung","Brain","Heart"]
   - "srcparticle": the source particle simulated in the Monte Carlo simulations, e.g.: "I131"
   - "excludesrcname": a list of the source name to exclude, []
   - "therun": the Monte Carlo the start Run #, the end Run #, and the Run increment for evaluating S-value's, e.g. [1,10,1]
-  - "srcname": a dictionary of the source organs, the dictionary key is the name of the source organ, and the value is the organ labele associated to the source organ, e.g. {"TotalBody":["ResidualSoftTissue","Cranium","Teeth","Lung","Brain","Heart","Tumor1","Tumor2"],"Heart":["Heart"],"Tumor1":["Tumor1"],"Tumor2":["Tumor2"],"Brain":["Brain"],"Lung":["Lung"]}}
+  - **"srcname"**: a dictionary of the source organs, the dictionary key is the name of the source organ, and the value is the organ labele associated to the source organ, e.g. {"TotalBody":["ResidualSoftTissue","Cranium","Teeth","Lung","Brain","Heart","Tumor1","Tumor2"],"Heart":["Heart"],"Tumor1":["Tumor1"],"Tumor2":["Tumor2"],"Brain":["Brain"],"Lung":["Lung"]}}
 
 
 ##### Segment & Convert CT images to Geant4 input files
