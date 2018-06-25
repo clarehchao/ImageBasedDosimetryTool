@@ -61,10 +61,10 @@ Before running the following commands, be sure to do the following:
   - PT0001/**IM**: dicom images of all the PET/CT images acquired at several time points
   - PT0001/**Summary**: the output dose plot, residence time and mass vs. target organ plot, and PET/CT images of the patient with identified tumors
 
-NOTE: the **_directory_** is mandatory to run the script below. 
+NOTE: the **bold directory** listed above is mandatory to run the script below. 
 
 
-3. Create a .json for the patient case (**_"xxx"_** are key fields to change per patient)
+3. Create a .json for the patient case (**"xxx"** are key fields to change per patient)
   - **"G4dir"**: Geant4 data directory, e.g. "/data2/G4data_Clare",
   - **"VHDMSDdir"**: toolkit code directory, e.g. "/data1/Proj_I131MIBGTherapy/VHDMSDlite"
   - **"NBptdir"**: patient directory, e.g. "/data1/Proj_I131MIBGTherapy/ptData",
