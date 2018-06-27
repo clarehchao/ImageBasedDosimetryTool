@@ -124,7 +124,7 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 ```
 - In any case, the below python code save the data in the .root G4 output file to .out text file
     - Similar code found in line 130-134 in ImVolTool/xyz2vol.py
-    - One can use ROOT (instead of Python) to save .root file into a text file (see README.md in [Monte Carlo Dosimetry GitLab Repo](https://git.radiology.ucsf.edu/PRL/VoxelizedMonteCarloDosimetry)
+    - One can use ROOT (instead of Python) to save .root file into a text file (see README.md in [Monte Carlo Dosimetry GitLab Repo](https://git.radiology.ucsf.edu/PRL/VoxelizedMonteCarloDosimetry))
     - Advise to ONLY save .root file to a text file for **testing purpose** since the text file will take up quite a bit of the hard drive space
 
 ```python
