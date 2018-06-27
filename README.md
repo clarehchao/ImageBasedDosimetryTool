@@ -119,10 +119,26 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
 - Run the below command after finishing running all the needed S-value Monte Carlo simulation
 - No need to convert the output .root file to .dat file since rootpy python package allows direct read/access to a .root file
 
-
 ```
 ./getSvalue_mysql.py inputfile/________.json
 ```
+- In any case, the below python code save the data in the .root G4 output file to .out text file
+    - Similar code found in line 130-134 in ImVolTool/xyz2vol.py
+    - One can use ROOT (instead of Python) to save .root file into a text file (see README.md in [Monte Carlo Dosimetry GitLab Repo](https://git.radiology.ucsf.edu/PRL/VoxelizedMonteCarloDosimetry)
+    - Advise to ONLY save .root file to a text file for **testing purpose** since the text file will take up quite a bit of the hard drive space
+```python
+import ROOT
+from root_numpy import tree2array
+import numpy as np
+
+fname = 'xxxxx.root'
+rfile = ROOT.TFile(fname)
+intree = rfile.Get('EdepTree')
+arr = tree2array(intree) # create a numpy N-d array
+np.savetxt('test.out', arr, delimiter=',')
+```
+
+
 
 ##### Compute the Organ Mass and Volume of a given patient geometry
 - Compute the mass and volume of all source organs defined in .json
@@ -179,7 +195,7 @@ select * from Siminfo;
 select c.OrganName,c.ResTime_BqhrPerBq,c.AbsorbedDose_mGy,d.Volume_cm3,d.Mass_g from (select a.pt_id,a.OrganName,ResTime_BqhrPerBq,AbsorbedDose_mGy from (ResTimeInfo a INNER JOIN AbsorbedDoseInfo b ON a.pt_id=b.pt_id and a.OrganName=b.TargetOrgan) where a.pt_id=6) as c INNER JOIN (select * from GeoInfo where geo_id='segCT_MIBGPT6') as d ON c.OrganName=d.OrganName;
 ```
 
-- To save the above query into a dataframe (if using Python Pandas package)
+- To save the above query into a dataframe (if using Python Pandas package) and to a .csv file
 
 ```python
 import pandas as pd
@@ -195,6 +211,8 @@ con = mdb.connect(host=DB_host, user=DB_usr,passwd=DB_pw, db=DB_name)
 
 qr = 'c.OrganName,c.ResTime_BqhrPerBq,c.AbsorbedDose_mGy,d.Volume_cm3,d.Mass_g from (select a.pt_id,a.OrganName,ResTime_BqhrPerBq,AbsorbedDose_mGy from (ResTimeInfo a INNER JOIN AbsorbedDoseInfo b ON a.pt_id=b.pt_id and a.OrganName=b.TargetOrgan) where a.pt_id=6) as c INNER JOIN (select * from GeoInfo where geo_id=\'segCT_MIBGPT6\') as d ON c.OrganName=d.OrganName;'
 df = pd.read_sql(qr,con)
+fname = 'xxxxx.csv'
+df.to_csv(fname)
 ```
 
 
