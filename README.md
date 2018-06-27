@@ -126,6 +126,7 @@ Note: if [G4iniputdir]/GeometryIM/binIM/[geo_id]/GeoVol.bin does exist, the code
     - Similar code found in line 130-134 in ImVolTool/xyz2vol.py
     - One can use ROOT (instead of Python) to save .root file into a text file (see README.md in [Monte Carlo Dosimetry GitLab Repo](https://git.radiology.ucsf.edu/PRL/VoxelizedMonteCarloDosimetry)
     - Advise to ONLY save .root file to a text file for **testing purpose** since the text file will take up quite a bit of the hard drive space
+
 ```python
 import ROOT
 from root_numpy import tree2array
@@ -137,8 +138,6 @@ intree = rfile.Get('EdepTree')
 arr = tree2array(intree) # create a numpy N-d array
 np.savetxt('test.out', arr, delimiter=',')
 ```
-
-
 
 ##### Compute the Organ Mass and Volume of a given patient geometry
 - Compute the mass and volume of all source organs defined in .json
