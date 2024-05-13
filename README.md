@@ -107,7 +107,7 @@ NOTE: the **bold directory** listed above is mandatory to run the script below.
 ##### Segment & Convert CT images to Geant4 input files
 
 - Segment the patient CT images into user-defined organ and tumor contoured manually or automatically
-- Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://git.radiology.ucsf.edu/PRL/VoxelizedMonteCarloDosimetry)
+- Convert the segmented CT image into Geant4 input files for [Monte Carlo dosimetry evaluation](https://github.com/clarehchao/VoxelizedMonteCarloDosimetry)
 
 ```
 ./CT2G4files.py inputfile/________.json
